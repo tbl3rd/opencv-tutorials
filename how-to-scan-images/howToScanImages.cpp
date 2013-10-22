@@ -8,35 +8,39 @@
 static void showUsage(const char *av0)
 {
     std::cout
-        << "Scan image objects in OpenCV (cv::Mat)."
+        << av0 << ": Time scanning a Mat with the C operator[] method, "
         << std::endl
-        << "As use case take an input image and divide"
+        << "    matrix iterators, the at() function, and the LUT() function."
+        << std::endl << std::endl
+        << "Usage: " << av0 << " <image-file> <divisor> [G]"
+        << std::endl << std::endl
+        << "Where: <image-file> is the path to an image file."
         << std::endl
-        << "the native color palette (255) with the input."
+        << "       <divisor> is a small integer less than 255."
         << std::endl
-        << "Shows C operator[] method, iterators, and at() function"
+        << "       G means process the image in gray scale."
+        << std::endl << std::endl
+        << "Example: " << av0 << " ../resources/Twas_Ever_Thus500.jpg 10"
         << std::endl
-        << "for on-the-fly item address calculation."
+        << "Read an image object from Twas_Ever_Thus500 into a cv::Mat."
         << std::endl
-        << "Usage: " << av0 << " imageNameToUse divideWith [G]"
-        << std::endl
-        << "If you add a G parameter the image is processed in gray scale"
+        << "Repeatedly divide the image's native color palette by 10."
         << std::endl << std::endl;
 }
 
-// Return divideWith after loading imageNameToUse into img.
+// Return divisor after loading an image file into img.
 // Return 0 after showing a usage message if there's a problem.
 //
 static int useCommandLine(int ac, const char *av[], cv::Mat &img)
 {
     if (ac > 2) {
-        int divideWith = 0;
-        std::stringstream ss; ss << av[2]; ss >> divideWith;
-        if (ss && divideWith) {
+        int divisor = 0;
+        std::stringstream ss; ss << av[2]; ss >> divisor;
+        if (ss && divisor) {
             const bool g = (ac == 4) && (*"g" == *av[3]);
             const int cogOpt = g? CV_LOAD_IMAGE_GRAYSCALE: CV_LOAD_IMAGE_COLOR;
             img = cv::imread(av[1], cogOpt);
-            if (img.data) return divideWith;
+            if (img.data) return divisor;
         }
     }
     showUsage(av[0]);
@@ -46,7 +50,7 @@ static int useCommandLine(int ac, const char *av[], cv::Mat &img)
 
 static cv::Mat &ScanImageAndReduceArrayOp(cv::Mat &I, const uchar table[])
 {
-    CV_Assert(I.depth() != sizeof(uchar));
+    CV_Assert(CV_8U == I.depth());
     int nRows = I.rows;
     int nCols = I.cols * I.channels();
     if (I.isContinuous()) {
@@ -63,7 +67,7 @@ static cv::Mat &ScanImageAndReduceArrayOp(cv::Mat &I, const uchar table[])
 
 static cv::Mat &ScanImageAndReduceIterator(cv::Mat &I, const uchar table[])
 {
-    CV_Assert(I.depth() != sizeof(uchar));
+    CV_Assert(CV_8U == I.depth());
     switch (I.channels()) {
     case 1: {
         cv::MatIterator_<uchar> it = I.begin<uchar>();
@@ -87,7 +91,7 @@ static cv::Mat &ScanImageAndReduceIterator(cv::Mat &I, const uchar table[])
 
 static cv::Mat &ScanImageAndReduceRandom(cv::Mat &I, const uchar *const table)
 {
-    CV_Assert(I.depth() != sizeof(uchar));
+    CV_Assert(CV_8U == I.depth());
     switch (I.channels()) {
     case 1: {
         for (int i = 0; i < I.rows; ++i) {
@@ -173,13 +177,13 @@ static double reduceWithLookupTable(const cv::Mat &I, const uchar table[])
 
 int main(int ac, const char *av[])
 {
-    cv::Mat I, J;
-    const int divideWith = useCommandLine(ac, av, I);
-    if (divideWith == 0) return 1;
+    cv::Mat I;
+    const int divisor = useCommandLine(ac, av, I);
+    if (divisor == 0) return 1;
     uchar table[256];
     const int tableSize = sizeof table / sizeof table[0];
     for (int i = 0; i < tableSize; ++i) {
-        table[i] = (divideWith * (i / divideWith));
+        table[i] = (divisor * (i / divisor));
     }
     double t = reduceWithArrayOp(I, table);
     std::cout << "Average time to reduce with operator[]:  "
