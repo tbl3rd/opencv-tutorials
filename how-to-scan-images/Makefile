@@ -5,8 +5,9 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
+main: howToScanImages
 
-test: howToScanImages
+test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	./howToScanImages ../resources/Twas_Ever_Thus500.jpg 10
 

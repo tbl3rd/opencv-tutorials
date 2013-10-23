@@ -123,8 +123,8 @@ static double reduceWithArrayOp(const cv::Mat &I, const uchar table[])
     static const int times = 100;
     double t = cv::getTickCount();
     for (int i = 0; i < times; ++i) {
-        cv::Mat clone_i = I.clone();
-        cv::Mat J = ScanImageAndReduceArrayOp(clone_i, table);
+        cv::Mat J = I.clone();
+        J = ScanImageAndReduceArrayOp(J, table);
     }
     t = 1000 * ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     t /= times;
@@ -132,13 +132,13 @@ static double reduceWithArrayOp(const cv::Mat &I, const uchar table[])
 }
 
 
-static double reduceWithMatrixIterator(const cv::Mat &I, const uchar table[])
+static double reduceWithMatIter(const cv::Mat &I, const uchar table[])
 {
     static const int times = 100;
     double t = cv::getTickCount();
     for (int i = 0; i < times; ++i) {
-        cv::Mat clone_i = I.clone();
-        cv::Mat J = ScanImageAndReduceIterator(clone_i, table);
+        cv::Mat J = I.clone();
+        J = ScanImageAndReduceIterator(J, table);
     }
     t = 1000 * ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     t /= times;
@@ -151,8 +151,8 @@ static double reduceWithAt(const cv::Mat &I, const uchar table[])
     static const int times = 100;
     double t = cv::getTickCount();
     for (int i = 0; i < times; ++i) {
-        cv::Mat clone_i = I.clone();
-        cv::Mat J = ScanImageAndReduceRandom(clone_i, table);
+        cv::Mat J = I.clone();
+        J = ScanImageAndReduceRandom(J, table);
     }
     t = 1000 * ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     t /= times;
@@ -168,7 +168,10 @@ static double reduceWithLookupTable(const cv::Mat &I, const uchar table[])
     uchar *const p = lookUpTable.data;
     for (int i = 0; i < 256; ++i) p[i] = table[i];
     double t = cv::getTickCount();
-    for (int i = 0; i < times; ++i) LUT(I, lookUpTable, J);
+    for (int i = 0; i < times; ++i) {
+        cv::Mat J = I.clone();
+        LUT(I, lookUpTable, J);
+    }
     t = 1000 * ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     t /= times;
     return t;
@@ -181,14 +184,16 @@ int main(int ac, const char *av[])
     const int divisor = useCommandLine(ac, av, I);
     if (divisor == 0) return 1;
     uchar table[256];
+    cv::Mat lookUpTable(1, 256, CV_8U);
+    uchar *const p = lookUpTable.data;
     const int tableSize = sizeof table / sizeof table[0];
     for (int i = 0; i < tableSize; ++i) {
-        table[i] = (divisor * (i / divisor));
+        p[i] = table[i] = (divisor * (i / divisor));
     }
     double t = reduceWithArrayOp(I, table);
     std::cout << "Average time to reduce with operator[]:  "
               << t << " milliseconds."<< std::endl;
-    t = reduceWithMatrixIterator(I, table);
+    t = reduceWithMatIter(I, table);
     std::cout << "Average time to reduce with MatIterator: "
               << t << " milliseconds."<< std::endl;
     t = reduceWithAt(I, table);

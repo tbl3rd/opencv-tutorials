@@ -5,8 +5,9 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
+main: loadAndDisplayImage
 
-test: loadAndDisplayImage
+test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	./loadAndDisplayImage ../resources/Twas_Ever_Thus500.jpg
 
