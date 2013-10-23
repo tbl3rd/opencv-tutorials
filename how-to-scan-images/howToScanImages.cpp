@@ -65,7 +65,7 @@ typedef struct Test {
     cv::Mat (*scan)(const struct Test &);
 
     void operator()(void) const {
-        static const int runs = 100;
+        static const int runs = 500;
         const double tickZero = cv::getTickCount();
         for (int i = 0; i < runs; ++i) const cv::Mat ignore = (*scan)(*this);
         const double ticks = cv::getTickCount() - tickZero;
@@ -86,7 +86,6 @@ typedef struct Test {
 //
 static cv::Mat scanWithArrayOp(const Test &t)
 {
-    CV_Assert(CV_8U == t.image.depth());
     cv::Mat image = t.image.clone();
     int nRows = image.rows;
     int nCols = image.cols * image.channels();
@@ -108,7 +107,6 @@ static cv::Mat scanWithArrayOp(const Test &t)
 //
 static cv::Mat scanWithMatIter(const Test &t)
 {
-    CV_Assert(CV_8U == t.image.depth());
     cv::Mat image = t.image.clone();
     const uchar *const table = t.table.data;
     switch (image.channels()) {
@@ -137,7 +135,6 @@ static cv::Mat scanWithMatIter(const Test &t)
 //
 static cv::Mat scanWithAt(const Test &t)
 {
-    CV_Assert(CV_8U == t.image.depth());
     cv::Mat image = t.image.clone();
     const uchar *const table = t.table.data;
     switch (image.channels()) {
@@ -170,7 +167,6 @@ static cv::Mat scanWithAt(const Test &t)
 //
 static cv::Mat scanWithLut(const Test &t)
 {
-    CV_Assert(CV_8U == t.image.depth());
     cv::Mat image = t.image.clone();
     LUT(t.image, t.table, image);
     return image;
@@ -179,10 +175,9 @@ static cv::Mat scanWithLut(const Test &t)
 
 int main(int ac, const char *av[])
 {
-    cv::Mat image;
+    cv::Mat image, table(1, 256, CV_8U);
     const int divisor = useCommandLine(ac, av, image);
-    if (divisor == 0) return 1;
-    cv::Mat table(1, 256, CV_8U);
+    if (divisor == 0 || CV_8U != image.depth()) return 1;
     uchar *const p = table.data;
     for (int i = 0; i < table.cols; ++i) p[i] = (divisor * (i / divisor));
     const Test tests[] = {
