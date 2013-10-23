@@ -83,8 +83,14 @@ typedef struct Test {
 } Test;
 
 
-// Scan t.image using Mat::operator[](), pulling a native lookup table from
-// t.table.data.
+// Scan t.image using C's native array [] on rows pulled via Mat::ptr<>(),
+// while also pulling a native lookup table from t.table.data.  This is
+// generally the most efficient scanning method, and can be even better
+// if the image.isContinuous().
+//
+// With care, this is as effective as a random access iterator, but using
+// LUT() as in scanWithLut() is much more convenient and about as fast when
+// processing an entire matrix with a lookup table.
 //
 static cv::Mat scanWithArrayOp(const Test &t)
 {
@@ -105,7 +111,9 @@ static cv::Mat scanWithArrayOp(const Test &t)
 
 
 // Scan t.image using MatIterator<>, pulling a native lookup table from
-// t.table.data.
+// t.table.data.  The iterator knows the dimensions of the image matrix,
+// but not its channels().  This is slower but safer than
+// scanWithArrayOp(), and has performance similar to scanWithAt().
 //
 static cv::Mat scanWithMatIter(const Test &t)
 {
@@ -132,8 +140,19 @@ static cv::Mat scanWithMatIter(const Test &t)
 }
 
 
-// Scan t.image using Mat::at<>() or Mat::operator()(), pulling a native
-// lookup table from t.table.data.  Clone the matrix header if necessary.
+// Treat the matrix like a multi-dimensional array.
+//
+// Scan t.image using Mat::at<>() or Mat_::operator()(), pulling a native
+// lookup table from t.table.data.  As with the iterator scan, these know
+// the dimensions of the image matrix but not its channels().  You can
+// specify the element type on each access using the Mat::at<>() member
+// template, or you can specify it once by embedding the matrix data in a
+// new header with the Mat_<>() class template which takes an element type.
+//
+// So scanWithAt() uses Mat::at<>() for grayscale and Mat_<>() for color.
+//
+// This performs comparable to scanWithMatIter() and is more convenient
+// for random access modification of an image rather than scanning it.
 //
 static cv::Mat scanWithAt(const Test &t)
 {
@@ -166,6 +185,10 @@ static cv::Mat scanWithAt(const Test &t)
 
 
 // Scan t.image using LUT() and t.table directly.
+//
+// LUT() is almost as efficient as scanWithArrayOp() when scanning an
+// entire matrix, and is most convenient when there is a lookup table
+// already computed.
 //
 static cv::Mat scanWithLut(const Test &t)
 {
