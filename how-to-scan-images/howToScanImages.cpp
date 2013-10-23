@@ -54,7 +54,7 @@ static int useCommandLine(int ac, const char *av[], cv::Mat &img)
 // Call scan(*this) a lot and report the average run time in milliseconds.
 //
 // After cloning image, scan() visits every element, reduces it according
-// to table or lookupTable, and returns the result.
+// to table, and returns the result.
 //
 // Each test() runs scan() many times and reports its average run time.
 //
@@ -81,6 +81,9 @@ typedef struct Test {
 } Test;
 
 
+// Scan t.image using Mat::operator[](), pulling a native lookup table from
+// t.table.data.
+//
 static cv::Mat scanWithArrayOp(const Test &t)
 {
     CV_Assert(CV_8U == t.image.depth());
@@ -100,6 +103,9 @@ static cv::Mat scanWithArrayOp(const Test &t)
 }
 
 
+// Scan t.image using MatIterator<>, pulling a native lookup table from
+// t.table.data.
+//
 static cv::Mat scanWithMatIter(const Test &t)
 {
     CV_Assert(CV_8U == t.image.depth());
@@ -126,6 +132,9 @@ static cv::Mat scanWithMatIter(const Test &t)
 }
 
 
+// Scan t.image using Mat::at<>() or Mat::operator()(), pulling a native
+// lookup table from t.table.data.  Clone the matrix header if necessary.
+//
 static cv::Mat scanWithAt(const Test &t)
 {
     CV_Assert(CV_8U == t.image.depth());
@@ -141,15 +150,15 @@ static cv::Mat scanWithAt(const Test &t)
         break;
     }
     case 3: {
-        cv::Mat_<cv::Vec3b> _I = image;
+        cv::Mat_<cv::Vec3b> head = image;
         for (int i = 0; i < image.rows; ++i) {
             for (int j = 0; j < image.cols; ++j) {
-                _I(i,j)[0] = table[_I(i,j)[0]];
-                _I(i,j)[1] = table[_I(i,j)[1]];
-                _I(i,j)[2] = table[_I(i,j)[2]];
+                head(i,j)[0] = table[head(i,j)[0]];
+                head(i,j)[1] = table[head(i,j)[1]];
+                head(i,j)[2] = table[head(i,j)[2]];
             }
         }
-        image = _I;
+        image = head;
         break;
     }
     }
@@ -157,12 +166,14 @@ static cv::Mat scanWithAt(const Test &t)
 }
 
 
+// Scan t.image using LUT() and t.table directly.
+//
 static cv::Mat scanWithLut(const Test &t)
 {
     CV_Assert(CV_8U == t.image.depth());
-    cv::Mat J = t.image.clone();
-    LUT(t.image, t.table, J);
-    return J;
+    cv::Mat image = t.image.clone();
+    LUT(t.image, t.table, image);
+    return image;
 }
 
 
