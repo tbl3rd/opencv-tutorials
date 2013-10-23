@@ -13,7 +13,7 @@ static void showUsage(const char *av0)
         << std::endl
         << "    matrix iterators, the at() function, and the LUT() function."
         << std::endl << std::endl
-        << "Usage: " << av0 << " <image-file> <divisor> [G]"
+        << "Usage: " << av0 << " <image-file> <divisor> [g]"
         << std::endl << std::endl
         << "Where: <image-file> is the path to an image file."
         << std::endl
@@ -21,7 +21,7 @@ static void showUsage(const char *av0)
         << std::endl
         << "       <divisor> is a small integer less than 255."
         << std::endl
-        << "       G means process the image in gray scale."
+        << "       g means process the image in gray scale."
         << std::endl << std::endl
         << "Example: " << av0 << " ../resources/Twas_Ever_Thus500.jpg 10"
         << std::endl
@@ -65,14 +65,16 @@ typedef struct Test {
     cv::Mat (*scan)(const struct Test &);
 
     void operator()(void) const {
-        static const int runs = 500;
+        static const int runs = 200;
+        cv::Mat reduced;
         const double tickZero = cv::getTickCount();
-        for (int i = 0; i < runs; ++i) const cv::Mat ignore = (*scan)(*this);
+        for (int i = 0; i < runs; ++i) reduced = (*scan)(*this);
         const double ticks = cv::getTickCount() - tickZero;
         const double totalSeconds = ticks / cv::getTickFrequency();
         const double msPerRun = totalSeconds * 1000 / runs;
         std::cout << "Average time to reduce with " << label << ": "
                   << msPerRun << " milliseconds." << std::endl;
+        cv::imshow(label, reduced);
     }
 
     Test(const cv::Mat &lut, const cv::Mat &i, const char *m,
@@ -178,6 +180,7 @@ int main(int ac, const char *av[])
     cv::Mat image, table(1, 256, CV_8U);
     const int divisor = useCommandLine(ac, av, image);
     if (divisor == 0 || CV_8U != image.depth()) return 1;
+    cv::imshow(av[1], image);
     uchar *const p = table.data;
     for (int i = 0; i < table.cols; ++i) p[i] = (divisor * (i / divisor));
     const Test tests[] = {
@@ -188,5 +191,6 @@ int main(int ac, const char *av[])
     };
     const int testsCount = sizeof tests / sizeof tests[0];
     for (int i = 0; i < testsCount; ++i) (tests[i])();
+    cv::waitKey(0);
     return 0;
 }

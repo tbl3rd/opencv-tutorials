@@ -7,9 +7,15 @@ CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 main: howToScanImages
 
-test: main
+gray: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./howToScanImages ../resources/Twas_Ever_Thus500.jpg 10
+	./howToScanImages ../resources/Twas_Ever_Thus500.jpg 200 g
+
+color: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./howToScanImages ../resources/Twas_Ever_Thus500.jpg 200
+
+test: gray color
 
 clean:
 	rm -rf howToScanImages *.dSYM
@@ -17,3 +23,5 @@ clean:
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	lldb ./howToScanImages
+
+.PHONY: main gray color test clean debug

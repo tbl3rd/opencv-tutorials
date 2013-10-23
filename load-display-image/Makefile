@@ -17,3 +17,6 @@ clean:
 debug: loadAndDisplayImage
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	lldb ./loadAndDisplayImage ../resources/Twas_Ever_Thus500.jpg
+
+
+.PHONY: main test clean debug
