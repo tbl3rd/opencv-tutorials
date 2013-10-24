@@ -87,19 +87,19 @@ struct HandCodedTest: Test {
             uchar *p = output.ptr<uchar>(j);
             for (int i = nChannels; i < nChannels * colMax; ++i) {
                 const int sharper = 0           // 0 except for
-                    - previous[i]               // [i,j-1] == -1
-                    - current[i - nChannels]    // [i-1,j] == -1
-                    + 5 * current[i]            // [i,j]   == +5
-                    - current[i + nChannels]    // [i+1,j] == -1
-                    - next[i];                  // [i,j+1] == -1
+                    - previous[i]               // [i    , j - 1] == -1
+                    - current[i - nChannels]    // [i - 1, j    ] == -1
+                    + 5 * current[i]            // [i    , j    ] == +5
+                    - current[i + nChannels]    // [i + 1, j    ] == -1
+                    - next[i];                  // [i    , j + 1] == -1
                 *p++ = cv::saturate_cast<uchar>(sharper);
             }
         }
         static const cv::Scalar zero(0);
-        output.row(0).setTo(zero);      // Set first row to 0.
-        output.row(rowMax).setTo(zero); // Set last  row to 0.
-        output.col(0).setTo(zero);      // Set first col to 0.
-        output.col(colMax).setTo(zero); // Set last  col to 0
+        output.row(0).setTo(zero);              // Set first row to 0.
+        output.row(rowMax).setTo(zero);         // Set last  row to 0.
+        output.col(0).setTo(zero);              // Set first col to 0.
+        output.col(colMax).setTo(zero);         // Set last  col to 0.
     }
     HandCodedTest(const cv::Mat &i): Test("hand-coded", i) {}
 };
