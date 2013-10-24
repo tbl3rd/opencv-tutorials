@@ -2,7 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
-
+g
 // Show a usage message on cout for program named av0.
 //
 static void showUsage(const char *av0)
@@ -95,7 +95,7 @@ struct HandCodedTest: Test {
                 *p++ = cv::saturate_cast<uchar>(sharper);
             }
         }
-        static const cv::Scalar zero(0);
+        static const cv::Scalar zero(0);        // Mask the border to 0.
         output.row(0).setTo(zero);              // Set first row to 0.
         output.row(rowMax).setTo(zero);         // Set last  row to 0.
         output.col(0).setTo(zero);              // Set first col to 0.
