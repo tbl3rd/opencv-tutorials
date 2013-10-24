@@ -1,6 +1,5 @@
 ﻿#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/ts/ts_perf.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -67,10 +66,10 @@ typedef struct Test {
     void operator()(void) const {
         static const int runs = 200;
         cv::Mat reduced;
-        const double tickZero = cv::getTickCount();
+        const int64 tickZero = cv::getTickCount();
         for (int i = 0; i < runs; ++i) reduced = (*scan)(*this);
-        const double ticks = cv::getTickCount() - tickZero;
-        const double totalSeconds = ticks / cv::getTickFrequency();
+        const int64 ticks = cv::getTickCount() - tickZero;
+        const double totalSeconds = (double)ticks / cv::getTickFrequency();
         const double msPerRun = totalSeconds * 1000 / runs;
         std::cout << "Average time to reduce with " << label << ": "
                   << msPerRun << " milliseconds." << std::endl;
