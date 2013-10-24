@@ -86,8 +86,8 @@ struct HandCodedTest: Test {
             const uchar *const next     = input.ptr<uchar>(j + 1);
             uchar *p = output.ptr<uchar>(j);
             for (int i = nChannels; i < nChannels * colMax; ++i) {
-                const uchar sharper = 0         // 0 except for
-                    - previous[i]       	// [i,j-1] == -1
+                const int sharper = 0           // 0 except for
+                    - previous[i]               // [i,j-1] == -1
                     - current[i - nChannels]    // [i-1,j] == -1
                     + 5 * current[i]            // [i,j]   == +5
                     - current[i + nChannels]    // [i+1,j] == -1
