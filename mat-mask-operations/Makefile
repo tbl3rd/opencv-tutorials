@@ -9,11 +9,11 @@ main: matMaskOperations
 
 gray: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./matMaskOperations ../resources/lena.jpg g
+	./matMaskOperations ../resources/lena.tiff g
 
 color: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./matMaskOperations ../resources/lena.jpg
+	./matMaskOperations ../resources/lena.tiff
 
 test: gray color
 
@@ -22,6 +22,6 @@ clean:
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./matMaskOperations --  ../resources/lena.jpg
+	lldb ./matMaskOperations --  ../resources/lena.tiff
 
 .PHONY: main gray color test clean debug

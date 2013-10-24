@@ -57,29 +57,29 @@ static int useCommandLine(int ac, const char *av[], cv::Mat &img)
 //
 // Each test() runs scan() many times and reports its average run time.
 //
-typedef struct Test {
+struct Test {
     const cv::Mat &table;
     const cv::Mat &image;
     const char *const label;
     cv::Mat (*scan)(const struct Test &);
 
     void operator()(void) const {
-        static const int runs = 200;
+        static const int runCount = 200;
         cv::Mat reduced;
         const int64 tickZero = cv::getTickCount();
-        for (int i = 0; i < runs; ++i) reduced = (*scan)(*this);
+        for (int i = 0; i < runCount; ++i) reduced = (*scan)(*this);
         const int64 ticks = cv::getTickCount() - tickZero;
         const double totalSeconds = (double)ticks / cv::getTickFrequency();
-        const double msPerRun = totalSeconds * 1000 / runs;
-        std::cout << "Average time to reduce with " << label << ": "
-                  << msPerRun << " milliseconds." << std::endl;
+        const double msPerRun = totalSeconds * 1000 / runCount;
+        std::cout << "Average " << label << " time in milliseconds: "
+                  << msPerRun << std::endl;
         cv::imshow(label, reduced);
     }
 
     Test(const cv::Mat &lut, const cv::Mat &i, const char *m,
          cv::Mat (*s)(const struct Test &)):
         table(lut), image(i), label(m), scan(s) {}
-} Test;
+};
 
 
 // Scan t.image using C's native array [] on rows pulled via Mat::ptr<>(),
@@ -207,9 +207,9 @@ int main(int ac, const char *av[])
     for (int i = 0; i < table.cols; ++i) p[i] = (divisor * (i / divisor));
     const Test tests[] = {
         Test(table, image, "operator[]", &scanWithArrayOp),
-        Test(table, image, "iterator",   &scanWithMatIter),
-        Test(table, image, "at()",       &scanWithAt),
-        Test(table, image, "LUT()",      &scanWithLut)
+        Test(table, image, "iterator  ", &scanWithMatIter),
+        Test(table, image, "at()      ", &scanWithAt),
+        Test(table, image, "LUT()     ", &scanWithLut)
     };
     const int testsCount = sizeof tests / sizeof tests[0];
     for (int i = 0; i < testsCount; ++i) (tests[i])();
