@@ -79,19 +79,19 @@ static void drawYellowRectangle(cv::Mat &image)
 
 // Draw a line from begin to end on image.
 //
-static void drawBlackLine(cv::Mat &image,
+static void drawGreenLine(cv::Mat &image,
                           const cv::Point &begin,
                           const cv::Point &end)
 {
-    static const cv::Scalar colorBlack(0, 0, 0);
+    static const cv::Scalar colorGreen(0, 255, 0);
     static const int thickness = 2;
     static const int lineType = 8;
-    cv::line(image, begin, end, colorBlack, thickness, lineType);
+    cv::line(image, begin, end, colorGreen, thickness, lineType);
 }
 
 // Draw some lines on image.
 //
-static void drawBlackLines(cv::Mat &image)
+static void drawGreenLines(cv::Mat &image)
 {
     static const struct Line {
         const cv::Point begin;
@@ -108,7 +108,7 @@ static void drawBlackLines(cv::Mat &image)
              cv::Point( 3 * SCALE / 4,      SCALE      ))
     };
     static const int n = sizeof ln / sizeof ln[0];
-    for (int i = 0; i < n; ++i) drawBlackLine(image, ln[i].begin, ln[i].end);
+    for (int i = 0; i < n; ++i) drawGreenLine(image, ln[i].begin, ln[i].end);
 }
 
 int main(int ac, const char *av[])
@@ -124,7 +124,7 @@ int main(int ac, const char *av[])
     drawRedFilledCircle(atomImage, center, radius);
     drawWhiteRookFilledPolygon(rookImage);
     drawYellowRectangle(rookImage);
-    drawBlackLines(rookImage);
+    drawGreenLines(rookImage);
     cv::imshow("Drawing 1: Atom", atomImage);
     cv::moveWindow("Drawing 1: Atom", 0, 200);
     cv::imshow("Drawing 2: Rook", rookImage);
