@@ -6,8 +6,6 @@
 //
 static void showUsage(const char *av0)
 {
-    const char one[] = "../resources/LinuxLogo.jpg";
-    const char two[] = "../resources/WindowsLogo.jpg";
     std::cout << std::endl
               << av0 << ": Blend two images."
               << std::endl << std::endl
@@ -31,7 +29,7 @@ static cv::Mat useCommandLine(int ac, const char *av[])
 
 // Apply the (+ beta (* alpha (p i j))) linear transform using Mat_ syntax.
 //
-static cv::Mat gainBias(const cv::Mat &input, double alpha, int beta)
+static cv::Mat gainBiasMat(const cv::Mat &input, double alpha, int beta)
 {
     cv::Mat_<cv::Vec3b> result = cv::Mat::zeros(input.size(), input.type());
     const cv::Mat_<cv::Vec3b> head = input;
@@ -98,7 +96,7 @@ int main(int ac, const char *av[])
     cv::namedWindow("LinearTransform", cv::WINDOW_AUTOSIZE);
     cv::imshow(av[1], input); cv::waitKey(50);
     static LinearTransform lts[] = {
-        &gainBias, &gainBiasAt, &withConvertTo
+        &gainBiasMat, &gainBiasAt, &withConvertTo
     };
     static const int ltsCount = sizeof lts / sizeof lts[0];
     for (int i = 0; i < ltsCount; ++i) applyTransform(input, lts[i]);
