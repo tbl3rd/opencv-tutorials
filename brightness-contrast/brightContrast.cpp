@@ -29,6 +29,8 @@ static cv::Mat useCommandLine(int ac, const char *av[])
     return result;
 }
 
+// Apply the (+ beta (* alpha (p i j))) linear transform using Mat_ syntax.
+//
 static cv::Mat gainBias(const cv::Mat &input, double alpha, int beta)
 {
     cv::Mat_<cv::Vec3b> result = cv::Mat::zeros(input.size(), input.type());
@@ -44,6 +46,8 @@ static cv::Mat gainBias(const cv::Mat &input, double alpha, int beta)
     return result;
 }
 
+// Apply the (+ beta (* alpha (p i j))) linear transform using at() syntax.
+//
 static cv::Mat gainBiasAt(const cv::Mat &input, double alpha, int beta)
 {
     cv::Mat result = cv::Mat::zeros(input.size(), input.type());
@@ -58,6 +62,8 @@ static cv::Mat gainBiasAt(const cv::Mat &input, double alpha, int beta)
     return result;
 }
 
+// Apply the (+ beta (* alpha (p i j))) linear transform using convertTo().
+//
 static cv::Mat withConvertTo(const cv::Mat &input, double alpha, int beta)
 {
     cv::Mat result;
@@ -65,7 +71,9 @@ static cv::Mat withConvertTo(const cv::Mat &input, double alpha, int beta)
     return result;
 }
 
-typedef cv::Mat (*LinearTransform)(const cv::Mat &, double, int);
+// Apply the (+ beta (* alpha (p i j))) linear transform.
+//
+typedef cv::Mat (*LinearTransform)(const cv::Mat &p, double alpha, int beta);
 
 static void applyTransform(const cv::Mat &input, LinearTransform lt)
 {
