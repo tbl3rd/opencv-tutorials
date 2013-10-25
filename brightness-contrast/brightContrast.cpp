@@ -1,7 +1,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
-#include <sstream>
 
 // Show a usage message on cout for program named av0.
 //
@@ -77,9 +76,8 @@ static void applyTransform(const cv::Mat &input, LinearTransform lt)
         const double alpha = 1.0 + alphaMax * i / max;
         for (int j = 0; j <= max; ++j) {
             const int beta = 0 + betaMax * j / max;
-            std::stringstream ss; ss << alpha << ":" << beta << std::ends;
             cv::Mat gb = (*lt)(input, alpha, beta);
-            cv::imshow(ss.str(), gb); cv::waitKey(50);
+            cv::imshow("LinearTransform", gb); cv::waitKey(50);
         }
     }
 }
@@ -88,6 +86,8 @@ int main(int ac, const char *av[])
 {
     const cv::Mat input = useCommandLine(ac, av);
     if (!input.data) return 1;
+    cv::namedWindow(av[1], cv::WINDOW_AUTOSIZE);
+    cv::namedWindow("LinearTransform", cv::WINDOW_AUTOSIZE);
     cv::imshow(av[1], input); cv::waitKey(50);
     static LinearTransform lts[] = {
         &gainBias, &gainBiasAt, &withConvertTo

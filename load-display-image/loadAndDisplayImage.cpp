@@ -23,10 +23,10 @@ int main (int ac, char *av[])
         return 1;
     }
     cv::Mat grayImage;
-    cv::cvtColor(image, grayImage, CV_BGR2GRAY);
+    cv::cvtColor(image, grayImage, cv::COLOR_BGR2GRAY);
     cv::imwrite("./gray-image.jpg", grayImage);
-    cv::namedWindow(imageName, CV_WINDOW_AUTOSIZE);
-    cv::namedWindow("Gray Image", CV_WINDOW_AUTOSIZE);
+    cv::namedWindow(imageName, cv::WINDOW_AUTOSIZE);
+    cv::namedWindow("Gray Image", cv::WINDOW_AUTOSIZE);
     cv::imshow(imageName, image);
     cv::imshow("Gray Image", grayImage);
     cv::waitKey(0);
