@@ -11,7 +11,7 @@ static const int windowWidth = 900;
 static const int windowHeight = 600;
 
 static const int LINETYPE = 8;
-static const int NUMBER = 100;
+static const int NUMBER = 255;
 
 static cv::RNG rng(0xffffffff);
 
@@ -129,19 +129,18 @@ static int randomText(cv::Mat &image)
     return false;
 }
 
-static int bigEnd(cv::Mat &image)
+static int bigFinale(cv::Mat &image)
 {
-    const cv::Size textSize
-        = cv::getTextSize("OpenCV forever!",
-                          cv::FONT_HERSHEY_COMPLEX, 3.0, 5, 0);
+    static const int font = cv::FONT_HERSHEY_COMPLEX;
+    static const char msg[] = "OpenCV forever!";
+    const cv::Size textSize = cv::getTextSize(msg, font, 3.0, 5, 0);
     const cv::Point origin((windowWidth  - textSize.width)  / 2,
                         (windowHeight - textSize.height) / 2);
-    for (int i = 0; i < 255; i += 2) {
-        cv::Mat image2 = image - cv::Scalar::all(i);
-        cv::putText(image2, "OpenCV forever!", origin,
-                    cv::FONT_HERSHEY_COMPLEX, 3,
-                    cv::Scalar(i, i, 255), 5, LINETYPE);
-        if (showImage(image2)) return true;
+    for (int i = 0; i < NUMBER; i += 2) {
+        const cv::Scalar color(i, i, 255);
+        cv::Mat fade = image - cv::Scalar::all(i);
+        cv::putText(fade, msg, origin, font, 3, color, 5, LINETYPE);
+        if (showImage(fade)) return true;
     }
     return false;
 }
@@ -158,7 +157,7 @@ int main(int, const char *[])
         &randomFilledPolygons,
         &randomCircles,
         &randomText,
-        &bigEnd
+        &bigFinale
     };
     static const int count = sizeof draw / sizeof draw[0];
     for (int i = 0; i < count; ++i) if ((*draw[i])(image)) return 0;

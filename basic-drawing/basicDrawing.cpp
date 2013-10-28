@@ -111,7 +111,7 @@ static void drawGreenLines(cv::Mat &image)
     for (int i = 0; i < n; ++i) drawGreenLine(image, ln[i].begin, ln[i].end);
 }
 
-int main(int ac, const char *av[])
+int main(int, const char *[])
 {
     static const cv::Point center(SCALE / 2, SCALE / 2);
     static const int radius = SCALE / 32;
