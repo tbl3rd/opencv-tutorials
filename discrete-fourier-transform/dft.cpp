@@ -46,16 +46,6 @@ static cv::Mat realify(const cv::Mat &complex)
     return result;
 }
 
-// Return real with a logarithmic scale applied.
-//
-static cv::Mat logify(const cv::Mat &real)
-{
-    static const cv::Scalar one  = cv::Scalar::all(1);
-    cv::Mat result = real + 1;
-    cv::log(result, result);
-    return result;
-}
-
 // Return logreal with the top-left quadrant swapped with the bottom-right
 // and with the top-right quadrant swapped with the bottom-left.
 //
@@ -69,8 +59,8 @@ static cv::Mat centerOrigin(const cv::Mat &logreal)
     const int halfY = result.rows / 2;
     const cv::Rect tlCrop(    0,     0, halfX, halfY); // top-left
     const cv::Rect trCrop(halfX,     0, halfX, halfY); // top-right
-    const cv::Rect blCrop(    0, halfY, halfX, halfY); // top-right
-    const cv::Rect brCrop(halfX, halfY, halfX, halfY); // top-right
+    const cv::Rect blCrop(    0, halfY, halfX, halfY); // bottom-left
+    const cv::Rect brCrop(halfX, halfY, halfX, halfY); // bottom-right
     cv::Mat tlQuadrant(result, tlCrop);
     cv::Mat trQuadrant(result, trCrop);
     cv::Mat blQuadrant(result, blCrop);
@@ -85,26 +75,32 @@ static cv::Mat centerOrigin(const cv::Mat &logreal)
     return result;
 }
 
+// Return log(1 + ||DFT(image)||)
+// or     log(1 + sqrt(Real(DFT(image))^2 + Imaginary(DFT(image))^2))
+// with the resulting matrix elements normalized to between 0.0 and 1.0.
+//
+static cv::Mat normalizedLogDiscreteFourierTransform(const cv::Mat &image)
+{
+    static const cv::Scalar one = cv::Scalar::all(1);
+    const cv::Mat padded = padOutImage(image);
+    cv::Mat complexPlane = complexify(padded);
+    cv::dft(complexPlane, complexPlane);
+    cv::Mat result = realify(complexPlane) + one;
+    cv::log(result, result);
+    cv::normalize(result, result, 0.0, 1.0, cv::NORM_MINMAX);
+    return result;
+}
+
 int main(int ac, const char *av[])
 {
     const char *const filename = ac > 1 ? av[1] : "../resources/lena.jpg";
     const cv::Mat image = cv::imread(filename, cv::IMREAD_GRAYSCALE);
-    if (image.empty()) return -1;
+    if (image.empty()) return 1;
     cv::imshow("Input Image", image);
-    const cv::Mat padded = padOutImage(image);
-    cv::imshow("Padded Image", padded);
-    cv::Mat complexPlane = complexify(padded);
-    cv::dft(complexPlane, complexPlane);
-    const cv::Mat real = realify(complexPlane);
-    const cv::Mat logreal = logify(real);
-    const cv::Mat normalizedLogreal = logreal;
-    cv::normalize(logreal, normalizedLogreal, 0, 1, CV_MINMAX);
-    cv::imshow("normalized logreal", normalizedLogreal);
-    const cv::Mat output = centerOrigin(logreal);
-    const cv::Mat normalizedOutput = output;
-    cv::normalize(output, normalizedOutput, 0, 1, CV_MINMAX);
-    cv::imshow("Input Image"       , image);
-    cv::imshow("spectrum magnitude", normalizedOutput);
+    const cv::Mat nldft = normalizedLogDiscreteFourierTransform(image);
+    cv::imshow("normalized logarithmic DFT", nldft);
+    const cv::Mat output = centerOrigin(nldft);
+    cv::imshow("spectrum magnitude", output);
     cv::waitKey();
     return 0;
 }
