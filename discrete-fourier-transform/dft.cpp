@@ -1,8 +1,17 @@
-#include "opencv2/core/core.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include <iostream>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
+
+// Show image with label in an unobstructed window.
+//
+static void showImage(const char *label, const cv::Mat &image)
+{
+    static int move = 0;
+    cv::imshow(label, image);
+    cv::moveWindow(label, move, 0);
+    move += image.cols;
+}
 
 // Return a copy of image padded out to optimal size for a DFT.
 //
@@ -46,15 +55,16 @@ static cv::Mat realify(const cv::Mat &complex)
     return result;
 }
 
-// Return logreal with the top-left quadrant swapped with the bottom-right
-// and with the top-right quadrant swapped with the bottom-left.
+// Return dftMatrix with the top-left quadrant swapped with the
+// bottom-right and with the top-right quadrant swapped with the
+// bottom-left.
 //
-static cv::Mat centerOrigin(const cv::Mat &logreal)
+static cv::Mat centerOrigin(const cv::Mat &dftMatrix)
 {
-    const int cols = logreal.cols & -2;
-    const int rows = logreal.rows & -2;
+    const int cols = dftMatrix.cols & -2;
+    const int rows = dftMatrix.rows & -2;
     const cv::Rect crop(0, 0, cols, rows);
-    const cv::Mat result = logreal(crop);
+    const cv::Mat result = dftMatrix(crop);
     const int halfX = result.cols / 2;
     const int halfY = result.rows / 2;
     const cv::Rect tlCrop(    0,     0, halfX, halfY); // top-left
@@ -96,11 +106,11 @@ int main(int ac, const char *av[])
     const char *const filename = ac > 1 ? av[1] : "../resources/lena.jpg";
     const cv::Mat image = cv::imread(filename, cv::IMREAD_GRAYSCALE);
     if (image.empty()) return 1;
-    cv::imshow("Input Image", image);
+    showImage("Input Image", image);
     const cv::Mat nldft = normalizedLogDiscreteFourierTransform(image);
-    cv::imshow("normalized logarithmic DFT", nldft);
+    showImage("normalized logarithmic DFT", nldft);
     const cv::Mat output = centerOrigin(nldft);
-    cv::imshow("spectrum magnitude", output);
+    showImage("spectrum magnitude", output);
     cv::waitKey();
     return 0;
 }
