@@ -14,18 +14,6 @@ static bool showImage(const cv::Mat &image)
     return cv::waitKey(5) >= 0;
 }
 
-// The default line type is 8 which means 8-connected Bresenham.
-// 4 means use a 4-connected Bresenham algorithm.
-// CV_AA means anti-alias the line.
-//
-static int randomLineType(void)
-{
-    static const int linetype[] = { 8, 4, CV_AA };
-    static const int count = sizeof linetype / sizeof linetype[0];
-    const int index = rng.uniform(0, count);
-    return linetype[index];
-}
-
 // Return a random RGB color.
 //
 static cv::Scalar randomColor(void)
@@ -78,7 +66,7 @@ static int randomLines(cv::Mat &image)
     for (int i = 0; i < UCHAR_MAX; ++i) {
         const int thickness = rng.uniform(1, 10);
         cv::line(image, randomPoint(image), randomPoint(image),
-                 randomColor(), thickness, randomLineType());
+                 randomColor(), thickness);
         if (showImage(image)) return true;
     }
     return false;
@@ -91,7 +79,7 @@ static int randomRectangles(cv::Mat &image)
     for (int i = 0; i < UCHAR_MAX; ++i) {
         const int thickness = MAX(rng.uniform(-3, 10), CV_FILLED);
         cv::rectangle(image, randomPoint(image), randomPoint(image),
-                      randomColor(), thickness, randomLineType());
+                      randomColor(), thickness);
         if (showImage(image)) return true;
     }
     return false;
@@ -107,7 +95,7 @@ static int randomEllipticArcs(cv::Mat &image)
         const double angle = rng.uniform(0, 180);
         const int thickness = rng.uniform(-1, 9);
         cv::ellipse(image, center, axes, angle, angle - 100, angle + 200,
-                    randomColor(), thickness, randomLineType());
+                    randomColor(), thickness);
         if (showImage(image)) return true;
     }
     return false;
@@ -128,7 +116,7 @@ static int randomTriangles(cv::Mat &image)
         const int vertexCounts[polyCount] = { vertexCount, vertexCount };
         const int thickness = rng.uniform(1, 10);
         cv::polylines(image, curves, vertexCounts, polyCount, true,
-                      randomColor(), rng.uniform(1, 10), randomLineType());
+                      randomColor(), thickness);
         if (showImage(image)) return true;
     }
     return false;
@@ -147,8 +135,7 @@ static int randomFilledTriangles(cv::Mat &image)
         };
         const cv::Point *polys[polyCount] = { points[0], points[1] };
         const int vertexCounts[polyCount] = { vertexCount, vertexCount };
-        cv::fillPoly(image, polys, vertexCounts, 2, randomColor(),
-                     randomLineType());
+        cv::fillPoly(image, polys, vertexCounts, 2, randomColor());
         if (showImage(image)) return true;
     }
     return false;
@@ -162,8 +149,7 @@ static int randomCircles(cv::Mat &image)
         const cv::Point center = randomPoint(image);
         const int radius = rng.uniform(0, 300);
         const int thickness = rng.uniform(-1, 9);
-        cv::circle(image, center, radius, randomColor(), thickness,
-                   randomLineType());
+        cv::circle(image, center, radius, randomColor(), thickness);
         if (showImage(image)) return true;
     }
     return false;
@@ -179,7 +165,7 @@ static int randomText(cv::Mat &image)
         const double scale = 0.1 + 0.05 * rng.uniform(0, 100);
         const int thickness = rng.uniform(1, 10);
         cv::putText(image, msg, origin, randomFontFace(), scale,
-                    randomColor(), thickness, randomLineType());
+                    randomColor(), thickness);
         if (showImage(image)) return true;
     }
     return false;
@@ -201,8 +187,7 @@ static int bigFinale(cv::Mat &image)
     for (int i = 0; i < UCHAR_MAX; ++i) {
         const cv::Scalar color(i, i, 255);
         cv::Mat fade = image - cv::Scalar::all(i);
-        cv::putText(fade, msg, origin, face, scale, color, thickness,
-                    randomLineType());
+        cv::putText(fade, msg, origin, face, scale, color, thickness);
         if (showImage(fade)) return true;
     }
     return false;
