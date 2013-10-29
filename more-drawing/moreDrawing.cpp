@@ -19,9 +19,9 @@ static bool showImage(const cv::Mat &image)
 //
 static cv::Scalar randomColor(void)
 {
-    const char blue  = (schar)rng;
-    const char green = (schar)rng;
-    const char red   = (schar)rng;
+    const char blue  = schar(rng);
+    const char green = schar(rng);
+    const char red   = schar(rng);
     return cv::Scalar(blue, green, red);
 }
 
@@ -65,9 +65,9 @@ static int randomRectangles(cv::Mat &image)
     return false;
 }
 
-// Draw random ellipses on image.
+// Draw random elliptical arcs on image.
 //
-static int randomEllipses(cv::Mat &image)
+static int randomEllipticArcs(cv::Mat &image)
 {
     for (int i = 0; i < NUMBER; ++i) {
         const cv::Point center = randomPoint(image);
@@ -80,36 +80,40 @@ static int randomEllipses(cv::Mat &image)
     return false;
 }
 
-// Draw random polylines on image.
+// Draw two random triangles on image.
 //
-static int randomPolylines(cv::Mat &image)
+static int randomTriangles(cv::Mat &image)
 {
+    static const int vertexCount = 3;
+    static const int polyCount = 2;
     for (int i = 0; i< NUMBER; ++i) {
-        const cv::Point pt[2][3] = {
+        const cv::Point points[polyCount][vertexCount] = {
             randomPoint(image), randomPoint(image), randomPoint(image),
             randomPoint(image), randomPoint(image), randomPoint(image)
         };
-        const cv::Point *ppt[2] = { pt[0], pt[1] };
-        const int npt[] = {3, 3};
-        cv::polylines(image, ppt, npt, 2, true,
+        const cv::Point *curves[polyCount] = { points[0], points[1] };
+        const int vertexCounts[polyCount] = { vertexCount, vertexCount };
+        cv::polylines(image, curves, vertexCounts, polyCount, true,
                       randomColor(), rng.uniform(1, 10), LINETYPE);
         if (showImage(image)) return true;
     }
     return false;
 }
 
-// Draw random filled polygons on image.
+// Draw two random filled triangles on image.
 //
-static int randomFilledPolygons(cv::Mat &image)
+static int randomFilledTriangles(cv::Mat &image)
 {
+    static const int vertexCount = 3;
+    static const int polyCount = 2;
     for (int i = 0; i < NUMBER; ++i) {
-        const cv::Point pt[2][3] = {
+        const cv::Point points[polyCount][vertexCount] = {
             randomPoint(image), randomPoint(image), randomPoint(image),
             randomPoint(image), randomPoint(image), randomPoint(image)
         };
-        const cv::Point *ppt[2] = { pt[0], pt[1] };
-        const int npt[] = {3, 3};
-        cv::fillPoly(image, ppt, npt, 2, randomColor(), LINETYPE);
+        const cv::Point *polys[polyCount] = { points[0], points[1] };
+        const int vertexCounts[polyCount] = { vertexCount, vertexCount };
+        cv::fillPoly(image, polys, vertexCounts, 2, randomColor(), LINETYPE);
         if (showImage(image)) return true;
     }
     return false;
@@ -168,9 +172,9 @@ int main(int, const char *[])
     static int (*const draw[])(cv::Mat &image) = {
         &randomLines,
         &randomRectangles,
-        &randomEllipses,
-        &randomPolylines,
-        &randomFilledPolygons,
+        &randomEllipticArcs,
+        &randomTriangles,
+        &randomFilledTriangles,
         &randomCircles,
         &randomText,
         &bigFinale
