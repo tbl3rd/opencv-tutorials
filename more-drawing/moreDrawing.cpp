@@ -18,9 +18,9 @@ static bool showImage(const cv::Mat &image)
 //
 static cv::Scalar randomColor(void)
 {
-    const char blue  = schar(rng);
-    const char green = schar(rng);
-    const char red   = schar(rng);
+    const uchar blue  = uchar(rng);
+    const uchar green = uchar(rng);
+    const uchar red   = uchar(rng);
     return cv::Scalar(blue, green, red);
 }
 
