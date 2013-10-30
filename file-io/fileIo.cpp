@@ -36,30 +36,21 @@ class SomeData
     double aDouble;
     std::string aString;
 
-    // Write this to fs as a map.
-    //
-    void writeToFileStorage(cv::FileStorage &fs) const
-    {
-        fs << "{"
-           << "SomeData_anInt"   << anInt
-           << "SomeData_aDouble" << aDouble
-           << "SomeData_aString" << aString
-           << "}";
-    }
-
-    // This wraps the SomeData::writeToFileStorage() member function in a
-    // static function as required by cv::FileStorage.
+    // Write value with name on fs as required by cv::FileStorage.
     //
     friend void write(cv::FileStorage &fs,
                       const std::string &name,
                       const SomeData &value)
     {
-        value.writeToFileStorage(fs);
+        fs << "{"
+           << "SomeData_anInt"   << value.anInt
+           << "SomeData_aDouble" << value.aDouble
+           << "SomeData_aString" << value.aString
+           << "}";
     }
 
-    // Read x from node using defaultValue if node.empty().  This wraps the
-    // SomeData::readFromFileNode() member function in a static function as
-    // required by cv::FileStorage.
+    // Read value from node using defaultValue as required by
+    // cv::FileStorage.
     //
     friend void read(const cv::FileNode &node, SomeData &value,
                      const SomeData &defaultValue = SomeData())
@@ -67,17 +58,10 @@ class SomeData
         if (node.empty()) {
             value = defaultValue;
         } else {
-            value.readFromFileNode(node);
+            node["SomeData_anInt"]   >> value.anInt;
+            node["SomeData_aDouble"] >> value.aDouble;
+            node["SomeData_aString"] >> value.aString;
         }
-    }
-
-    // Read this from node as a map.
-    //
-    void readFromFileNode(const cv::FileNode &node)
-    {
-        node["SomeData_anInt"]   >> anInt;
-        node["SomeData_aDouble"] >> aDouble;
-        node["SomeData_aString"] >> aString;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const SomeData &m)
