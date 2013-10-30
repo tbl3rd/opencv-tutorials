@@ -26,20 +26,68 @@ static void showUsage(const char *av0)
         << "Example: " << av0 << " somedata.xml.gz" << std::endl;
 }
 
+
+// A class of various data members that has write() and read() functions
+// sufficient for cv::FileStorage serialization.
+//
 class SomeData
 {
     int anInt;
     double aDouble;
     std::string aString;
 
-    friend std::ostream &operator<<(std::ostream &out, const SomeData &m)
+    // Write this to fs as a map.
+    //
+    void writeToFileStorage(cv::FileStorage &fs) const
     {
-        out << "{"
-            << "\"" "anInt"   "\"" << " "         << m.anInt   << " "
-            << "\"" "aDouble" "\"" << " "         << m.aDouble << " "
-            << "\"" "aString" "\"" << " " << "\"" << m.aString << "\""
-            << "}";
-        return out;
+        fs << "{"
+           << "SomeData_anInt"   << anInt
+           << "SomeData_aDouble" << aDouble
+           << "SomeData_aString" << aString
+           << "}";
+    }
+
+    // This wraps the SomeData::writeToFileStorage() member function in a
+    // static function as required by cv::FileStorage.
+    //
+    friend void write(cv::FileStorage &fs,
+                      const std::string &name,
+                      const SomeData &value)
+    {
+        value.writeToFileStorage(fs);
+    }
+
+    // Read x from node using defaultValue if node.empty().  This wraps the
+    // SomeData::readFromFileNode() member function in a static function as
+    // required by cv::FileStorage.
+    //
+    friend void read(const cv::FileNode &node, SomeData &value,
+                     const SomeData &defaultValue = SomeData())
+    {
+        if (node.empty()) {
+            value = defaultValue;
+        } else {
+            value.readFromFileNode(node);
+        }
+    }
+
+    // Read this from node as a map.
+    //
+    void readFromFileNode(const cv::FileNode &node)
+    {
+        node["SomeData_anInt"]   >> anInt;
+        node["SomeData_aDouble"] >> aDouble;
+        node["SomeData_aString"] >> aString;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const SomeData &m)
+    {
+        os << "{"
+           << "\"" "SomeData_anInt"   "\"" << " "         << m.anInt   << " "
+           << "\"" "SomeData_aDouble" "\"" << " "         << m.aDouble << " "
+           << "\"" "SomeData_aString" "\"" << " " << "\"" << m.aString << "\""
+           << "}";
+        return os;
     }
 
 public:
@@ -47,46 +95,8 @@ public:
     SomeData(): anInt(1), aDouble(1.1), aString("default SomeData ctor") {}
 
     SomeData(int): anInt(97), aDouble(CV_PI), aString("mydata1234") {}
-
-    // Write this to fs as a map.
-    //
-    void write(cv::FileStorage &fs) const
-    {
-        fs << "{"
-           << "anInt"   << anInt
-           << "aDouble" << aDouble
-           << "aString" << aString
-           << "}";
-    }
-
-    // Read this from node as a map.
-    //
-    void read(const cv::FileNode &node)
-    {
-        node["anInt"]   >> anInt;
-        node["aDouble"] >> aDouble;
-        node["aString"] >> aString;
-    }
 };
 
-// Write x to FileStorage.
-//
-static void write(cv::FileStorage &fs, const std::string &, const SomeData &x)
-{
-    x.write(fs);
-}
-
-// Read x from node using default_value if node is not a SomeData.
-//
-static void read(const cv::FileNode &node, SomeData &x,
-                 const SomeData &default_value = SomeData())
-{
-    if (node.empty()) {
-        x = default_value;
-    } else {
-        x.read(node);
-    }
-}
 
 static bool writeSomeStuff(const char *filename)
 {
