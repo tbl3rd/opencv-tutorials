@@ -82,11 +82,11 @@ static bool writeSomeData(const char *filename)
     cv::Mat doubleZeros = cv::Mat_<double>::zeros(3, 1);
     SomeData someData(1);
     cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-    fs << "iterationNr" << 100
-       << "strings"
-       << "[" << "image1.jpg" << "Awesomeness" << "baboon.jpg" << "]"
-       << "mapping" << "{" << "One" << 1 << "Two" << 2 << "}"
-       << "ucharEye" << ucharEye << "doubleZeros" << doubleZeros
+    fs << "someInteger" << 100
+       << "stringSequence" << "[" << "image.jpg" << "wild" << "lena.jpg" << "]"
+       << "stringToIntMap" << "{" << "One" << 1 << "Two" << 2 << "}"
+       << "ucharEye" << ucharEye
+       << "doubleZeros" << doubleZeros
        << "someData" << someData;
     fs.release();
     std::cout << "done." << std::endl;
@@ -97,32 +97,46 @@ static bool readSomeData(const char *filename)
 {
     std::cout << std::endl << "Reading: " << std::endl;
     cv::FileStorage fs(filename, cv::FileStorage::READ);
-
-    //fs["iterationNr"] >> itNr;
-    const int itNr = fs["iterationNr"];
-    std::cout << itNr << std::endl;
     if (!fs.isOpened()) {
         std::cerr << "Failed to open " << filename << std::endl;
         return false;
     }
 
-    const cv::FileNode strings = fs["strings"];
-    if (strings.type() != cv::FileNode::SEQ) {
-        std::cerr << "strings is not a sequence! FAIL" << std::endl;
+    const cv::FileNode fnSomeInteger = fs["someInteger"];
+    if (fnSomeInteger.type() == cv::FileNode::INT) {
+        const int someInteger = fnSomeInteger;
+        std::cout << "someInteger" << "=" << someInteger << std::endl;
+    }
+
+    const cv::FileNode fnStringSequence = fs["stringSequence"];
+    if (fnStringSequence.type() == cv::FileNode::SEQ) {
+        // std::vector<std::string> stringSequence = fnStringSequence;
+        const cv::FileNodeIterator pEnd = fnStringSequence.end();
+        cv::FileNodeIterator p = fnStringSequence.begin();
+        const char *separator = "stringSequence" "=" "[";
+        for (; p != pEnd; ++p) {
+            const std::string &s = *p;
+            std::cout << separator << "\"" << s << "\"";
+            separator = " ";
+        }
+        std::cout << "]" << std::endl;
+        // for (std::string s: stringSequence) {
+        //     std::cout << "\"" << s << "\"" << std::endl;
+        // }
+    } else {
+        std::cerr << "stringSequence is not a sequence!" << std::endl;
         return false;
     }
 
-    const cv::FileNodeIterator it_end = strings.end();
-    for (cv::FileNodeIterator it = strings.begin(); it != it_end; ++it) {
-        const std::string &s = *it;
-        // std::cout << (std::string)*it << std::endl;
-        std::cout << "\"" << s << "\"" << std::endl;
+    const cv::FileNode stringToIntMap = fs["stringToIntMap"];
+    if (stringToIntMap.type() == cv::FileNode::MAP) {
+        std::cout << "Two " << (int)(stringToIntMap["Two"]) << "; ";
+        std::cout << "One " << (int)(stringToIntMap["One"]) << std::endl
+                  << std::endl;
+    } else {
+        std::cerr << "stringToIntMap is not a map!" << std::endl;
+        return false;
     }
-
-    const cv::FileNode mapping = fs["mapping"];
-    std::cout << "Two  " << (int)(mapping["Two"]) << "; ";
-    std::cout << "One  " << (int)(mapping["One"]) << std::endl << std::endl;
-
 
     SomeData someData;
     cv::Mat ucharEye, doubleZeros;

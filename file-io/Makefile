@@ -1,7 +1,8 @@
 INSTALL := $(HOME)/qrc/track/opencv/install
 LIBS :=  -lopencv_core -lopencv_highgui -lopencv_imgproc -lstdc++
 
-CXXFLAGS := -g -O0
+CXXFLAGS := -Wno-c++11-extensions
+CXXFLAGS := -g -O0 
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
