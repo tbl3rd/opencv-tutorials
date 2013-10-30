@@ -30,7 +30,7 @@ struct SomeData
     double aDouble;
     std::string aString;
 
-    SomeData(): anInt(1), aDouble(1.1), aString("default one dot one") {}
+    SomeData(): anInt(1), aDouble(1.1), aString("default SomeData ctor") {}
 
     SomeData(int): anInt(97), aDouble(CV_PI), aString("mydata1234") {}
 
@@ -50,10 +50,15 @@ struct SomeData
     }
 };
 
+// Write x to FileStorage.
+//
 static void write(cv::FileStorage &fs, const std::string &, const SomeData &x)
 {
     x.write(fs);
 }
+
+// Read x from node using default_value if node is not a SomeData.
+//
 static void read(const cv::FileNode &node, SomeData &x,
                  const SomeData &default_value = SomeData())
 {
@@ -66,16 +71,16 @@ static void read(const cv::FileNode &node, SomeData &x,
 
 static std::ostream &operator<<(std::ostream &out, const SomeData &m)
 {
-    out << "anInt"   << "="         << m.anInt
+    out << "anInt"   << " = "         << m.anInt
         << ", "
-        << "aDouble" << "="         << m.aDouble
+        << "aDouble" << " = "         << m.aDouble
         << ", "
-        << "aString" << "=" << "\"" << m.aString << "\"";
+        << "aString" << " = " << "\"" << m.aString << "\"";
 
     return out;
 }
 
-static bool writeSomeData(const char *filename)
+static bool writeSomeStuff(const char *filename)
 {
     std::cout << "Writing ... ";
     cv::Mat ucharEye = cv::Mat_<uchar>::eye(3, 3);
@@ -93,7 +98,7 @@ static bool writeSomeData(const char *filename)
     return true;
 }
 
-static bool readSomeData(const char *filename)
+static bool readSomeStuff(const char *filename)
 {
     std::cout << std::endl << "Reading: " << std::endl;
     cv::FileStorage fs(filename, cv::FileStorage::READ);
@@ -102,48 +107,65 @@ static bool readSomeData(const char *filename)
         return false;
     }
 
-    const cv::FileNode fnSomeInteger = fs["someInteger"];
-    if (fnSomeInteger.type() == cv::FileNode::INT) {
+    const cv::FileNode &fnSomeInteger = fs["someInteger"];
+    if (fnSomeInteger.isInt()) {
         const int someInteger = fnSomeInteger;
-        std::cout << "someInteger" << "=" << someInteger << std::endl;
+        std::cout << "someInteger" << " = " << someInteger << std::endl;
+    } else {
+        std::cerr << "someInteger is not an integer" << std::endl;
+        return false;
     }
 
-    const cv::FileNode fnStringSequence = fs["stringSequence"];
-    if (fnStringSequence.type() == cv::FileNode::SEQ) {
-        // std::vector<std::string> stringSequence = fnStringSequence;
+    const cv::FileNode &fnStringSequence = fs["stringSequence"];
+    if (fnStringSequence.isSeq()) {
         const cv::FileNodeIterator pEnd = fnStringSequence.end();
         cv::FileNodeIterator p = fnStringSequence.begin();
-        const char *separator = "stringSequence" "=" "[";
+        const char *separator = "stringSequence" " = " "[ ";
         for (; p != pEnd; ++p) {
-            const std::string &s = *p;
-            std::cout << separator << "\"" << s << "\"";
-            separator = " ";
+            if ((*p).type() == cv::FileNode::STRING) {
+                const std::string s(*p);
+                std::cout << separator << "\"" << s << "\"";
+                separator = " ";
+            } else {
+                std::cerr << "stringSequence element is not a string!"
+                          << std::endl;
+                return false;
+            }
         }
-        std::cout << "]" << std::endl;
-        // for (std::string s: stringSequence) {
-        //     std::cout << "\"" << s << "\"" << std::endl;
-        // }
+        std::cout << " ]" << std::endl;
     } else {
         std::cerr << "stringSequence is not a sequence!" << std::endl;
         return false;
     }
 
-    const cv::FileNode stringToIntMap = fs["stringToIntMap"];
-    if (stringToIntMap.type() == cv::FileNode::MAP) {
-        std::cout << "Two " << (int)(stringToIntMap["Two"]) << "; ";
-        std::cout << "One " << (int)(stringToIntMap["One"]) << std::endl
-                  << std::endl;
+    const cv::FileNode &fnStringToIntMap = fs["stringToIntMap"];
+    if (fnStringToIntMap.isMap()) {
+        const cv::FileNodeIterator pEnd = fnStringToIntMap.end();
+        cv::FileNodeIterator p = fnStringToIntMap.begin();
+        const char *separator = "stringToIntMap" " = " "{ ";
+        for (; p != pEnd; ++p) {
+            if ((*p).isNamed()) {
+                const std::string n((*p).name());
+                const int v = *p;
+                std::cout << separator << "\"" << n << "\"" << " " << v;
+                separator = ", ";
+            } else {
+                std::cerr << "stringToIntMap node is not named!" << std::endl;
+                return false;
+            }
+        }
+        std::cout << " }" << std::endl;
     } else {
         std::cerr << "stringToIntMap is not a map!" << std::endl;
         return false;
     }
 
-    SomeData someData;
-    cv::Mat ucharEye, doubleZeros;
-
-    fs["ucharEye"] >> ucharEye;
+    cv::Mat ucharEye;
+    fs["ucharEye"]    >> ucharEye;
+    cv::Mat doubleZeros;
     fs["doubleZeros"] >> doubleZeros;
-    fs["someData"] >> someData;
+    SomeData someData;
+    fs["someData"]    >> someData;
 
     std::cout << std::endl
               << "ucharEye = "    << std::endl << ucharEye    << std::endl
@@ -152,8 +174,8 @@ static bool readSomeData(const char *filename)
               << "someData: " << someData << std::endl
               << std::endl;
 
-    std::cout << "Read NonExisting resulting in default data." << std::endl;
-    fs["NonExisting"] >> someData;
+    std::cout << "Read 'no thing' into a SomeData for default." << std::endl;
+    fs["no thing"] >> someData;
     std::cout << "someData: " << someData << std::endl;
     return true;
 }
@@ -162,8 +184,8 @@ int main(int ac, char *av[])
 {
     const bool ok
         =  ac == 2
-        && writeSomeData(av[1])
-        && readSomeData(av[1]);
+        && writeSomeStuff(av[1])
+        && readSomeStuff(av[1]);
     if (ok) {
         std::cout << std::endl
                   << "Tip: Open " << av[0]
