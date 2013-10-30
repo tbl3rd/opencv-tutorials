@@ -10,6 +10,10 @@ IOFILE := ./somedata.gz
 
 main: fileIo
 
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./fileIo
+
 test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	./fileIo $(IOFILE)
@@ -21,4 +25,4 @@ debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	lldb ./fileIo -- $(IOFILE)
 
-.PHONY: main test clean debug
+.PHONY: main help test clean debug

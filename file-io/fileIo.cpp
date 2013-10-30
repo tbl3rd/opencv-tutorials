@@ -4,7 +4,7 @@
 
 static void showUsage(const char *av0)
 {
-    std::cout
+    std::cerr
         << std::endl
         << av0 << ": Demonstrate serializing data to and from files."
         << std::endl << std::endl
@@ -23,20 +23,33 @@ static void showUsage(const char *av0)
         << "           '<file>.gz' is equivalent to '<file>.yaml.gz'."
         << std::endl
         << std::endl
-        << "Example: " << av0 << " somedata.xml.gz" << std::endl
-        << std::endl;
+        << "Example: " << av0 << " somedata.xml.gz" << std::endl;
 }
 
-struct SomeData
+class SomeData
 {
     int anInt;
     double aDouble;
     std::string aString;
 
+    friend std::ostream &operator<<(std::ostream &out, const SomeData &m)
+    {
+        out << "{"
+            << "\"" "anInt"   "\"" << " "         << m.anInt   << " "
+            << "\"" "aDouble" "\"" << " "         << m.aDouble << " "
+            << "\"" "aString" "\"" << " " << "\"" << m.aString << "\""
+            << "}";
+        return out;
+    }
+
+public:
+
     SomeData(): anInt(1), aDouble(1.1), aString("default SomeData ctor") {}
 
     SomeData(int): anInt(97), aDouble(CV_PI), aString("mydata1234") {}
 
+    // Write this to fs as a map.
+    //
     void write(cv::FileStorage &fs) const
     {
         fs << "{"
@@ -45,6 +58,9 @@ struct SomeData
            << "aString" << aString
            << "}";
     }
+
+    // Read this from node as a map.
+    //
     void read(const cv::FileNode &node)
     {
         anInt   = int(        node["anInt"  ]);
@@ -72,17 +88,6 @@ static void read(const cv::FileNode &node, SomeData &x,
     }
 }
 
-static std::ostream &operator<<(std::ostream &out, const SomeData &m)
-{
-    out << "anInt"   << " = "         << m.anInt
-        << ", "
-        << "aDouble" << " = "         << m.aDouble
-        << ", "
-        << "aString" << " = " << "\"" << m.aString << "\"";
-
-    return out;
-}
-
 static bool writeSomeStuff(const char *filename)
 {
     std::cout << std::endl << "Writing " << filename << " ... ";
@@ -101,6 +106,67 @@ static bool writeSomeStuff(const char *filename)
     return true;
 }
 
+static bool readSomeInteger(cv::FileStorage &fs)
+{
+    const cv::FileNode &fnSomeInteger = fs["someInteger"];
+    if (fnSomeInteger.isInt()) {
+        const int someInteger = fnSomeInteger;
+        std::cout << "someInteger" << " = " << someInteger << std::endl;
+        return true;
+    }
+    std::cerr << "someInteger is not an integer" << std::endl;
+    return false;
+}
+
+static bool readStringSequence(cv::FileStorage &fs)
+{
+    const cv::FileNode &fnStringSequence = fs["stringSequence"];
+    if (fnStringSequence.isSeq()) {
+        const cv::FileNodeIterator pEnd = fnStringSequence.end();
+        cv::FileNodeIterator p = fnStringSequence.begin();
+        const char *separator = "stringSequence" " = " "[";
+        for (; p != pEnd; ++p) {
+            if ((*p).type() == cv::FileNode::STRING) {
+                const std::string s(*p);
+                std::cout << separator << "\"" << s << "\"";
+                separator = " ";
+            } else {
+                std::cerr << "stringSequence element is not a string!"
+                          << std::endl;
+                return false;
+            }
+        }
+        std::cout << "]" << std::endl;
+        return true;
+    }
+    std::cerr << "stringSequence is not a sequence!" << std::endl;
+    return false;
+}
+
+static bool readStringToIntMap(cv::FileStorage &fs)
+{
+    const cv::FileNode &fnStringToIntMap = fs["stringToIntMap"];
+    if (fnStringToIntMap.isMap()) {
+        const cv::FileNodeIterator pEnd = fnStringToIntMap.end();
+        cv::FileNodeIterator p = fnStringToIntMap.begin();
+        const char *separator = "stringToIntMap" " = " "{";
+        for (; p != pEnd; ++p) {
+            if ((*p).isNamed()) {
+                const std::string n((*p).name());
+                const int v = *p;
+                std::cout << separator << "\"" << n << "\"" << " " << v;
+                separator = " ";
+            } else {
+                std::cerr << "stringToIntMap node is not named!" << std::endl;
+                return false;
+            }
+        }
+        std::cout << "}" << std::endl;
+        return true;
+    }
+    std::cerr << "stringToIntMap is not a map!" << std::endl;
+    return false;
+}
 
 static bool readMatAndSomeData(cv::FileStorage &fs)
 {
@@ -118,73 +184,8 @@ static bool readMatAndSomeData(cv::FileStorage &fs)
               << std::endl;
     std::cout << "Read 'no thing' into a SomeData for default." << std::endl;
     fs["no thing"] >> someData;
-    std::cout << "someData: " << someData << std::endl;
+    std::cout << "someData" " = " << someData << std::endl;
     return true;
-}
-
-
-static bool readSomeInteger(cv::FileStorage &fs)
-{
-    const cv::FileNode &fnSomeInteger = fs["someInteger"];
-    if (fnSomeInteger.isInt()) {
-        const int someInteger = fnSomeInteger;
-        std::cout << "someInteger" << " = " << someInteger << std::endl;
-        return true;
-    }
-    std::cerr << "someInteger is not an integer" << std::endl;
-    return false;
-}
-
-
-static bool readStringSequence(cv::FileStorage &fs)
-{
-    const cv::FileNode &fnStringSequence = fs["stringSequence"];
-    if (fnStringSequence.isSeq()) {
-        const cv::FileNodeIterator pEnd = fnStringSequence.end();
-        cv::FileNodeIterator p = fnStringSequence.begin();
-        const char *separator = "stringSequence" " = " "[ ";
-        for (; p != pEnd; ++p) {
-            if ((*p).type() == cv::FileNode::STRING) {
-                const std::string s(*p);
-                std::cout << separator << "\"" << s << "\"";
-                separator = " ";
-            } else {
-                std::cerr << "stringSequence element is not a string!"
-                          << std::endl;
-                return false;
-            }
-        }
-        std::cout << " ]" << std::endl;
-        return true;
-    }
-    std::cerr << "stringSequence is not a sequence!" << std::endl;
-    return false;
-}
-
-
-static bool readStringToIntMap(cv::FileStorage &fs)
-{
-    const cv::FileNode &fnStringToIntMap = fs["stringToIntMap"];
-    if (fnStringToIntMap.isMap()) {
-        const cv::FileNodeIterator pEnd = fnStringToIntMap.end();
-        cv::FileNodeIterator p = fnStringToIntMap.begin();
-        const char *separator = "stringToIntMap" " = " "{ ";
-        for (; p != pEnd; ++p) {
-            if ((*p).isNamed()) {
-                const std::string n((*p).name());
-                const int v = *p;
-                std::cout << separator << "\"" << n << "\"" << " " << v;
-                separator = ", ";
-            } else {
-                std::cerr << "stringToIntMap node is not named!" << std::endl;
-                return false;
-            }
-        }
-        std::cout << " }" << std::endl;
-        return true;
-    }
-    std::cerr << "stringToIntMap is not a map!" << std::endl;
-    return false;
 }
 
 static bool readSomeStuff(const char *filename)
@@ -209,8 +210,8 @@ int main(int ac, char *av[])
         && writeSomeStuff(av[1])
         && readSomeStuff(av[1]);
     if (ok) {
-        std::cout << std::endl
-                  << "Tip: Open " << av[0]
+        std::cerr << std::endl
+                  << "Tip: Open " << av[1]
                   << " with a text editor to see the serialized data."
                   << std::endl;
         return 0;
