@@ -14,11 +14,14 @@ static void showUsage(const char *av0)
         << std::endl
         << "       The <ext> extension may be: '.xml' or '.yaml'" << std::endl
         << "       to serialize data as XML or as YAML, respectively."
+        << "       The default is YAML if <ext> neither '.xml' nor '.yaml'."
         << std::endl << std::endl
         << "       A '.gz' suffix designates compression such that:"
         << std::endl
         << "           <file>.xml.gz  means use gzipped XML." << std::endl
         << "           <file>.yaml.gz means use gzipped YAML." << std::endl
+        << "           '<file>.gz' is equivalent to '<file>.yaml.gz'."
+        << std::endl
         << std::endl
         << "Example: " << av0 << " somedata.xml.gz" << std::endl
         << std::endl;
@@ -82,7 +85,7 @@ static std::ostream &operator<<(std::ostream &out, const SomeData &m)
 
 static bool writeSomeStuff(const char *filename)
 {
-    std::cout << "Writing ... ";
+    std::cout << std::endl << "Writing " << filename << " ... ";
     cv::Mat ucharEye = cv::Mat_<uchar>::eye(3, 3);
     cv::Mat doubleZeros = cv::Mat_<double>::zeros(3, 1);
     SomeData someData(1);
@@ -93,29 +96,48 @@ static bool writeSomeStuff(const char *filename)
        << "ucharEye" << ucharEye
        << "doubleZeros" << doubleZeros
        << "someData" << someData;
-    fs.release();
+    fs.release();                       // This should not be necessary.
     std::cout << "done." << std::endl;
     return true;
 }
 
-static bool readSomeStuff(const char *filename)
-{
-    std::cout << std::endl << "Reading: " << std::endl;
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
-    if (!fs.isOpened()) {
-        std::cerr << "Failed to open " << filename << std::endl;
-        return false;
-    }
 
+static bool readMatAndSomeData(cv::FileStorage &fs)
+{
+    cv::Mat ucharEye;
+    fs["ucharEye"]    >> ucharEye;
+    cv::Mat doubleZeros;
+    fs["doubleZeros"] >> doubleZeros;
+    SomeData someData;
+    fs["someData"]    >> someData;
+    std::cout << std::endl
+              << "ucharEye"    " = " << std::endl << ucharEye    << std::endl
+              << "doubleZeros" " = " << std::endl << doubleZeros << std::endl
+              << std::endl
+              << "someData"    " = " << someData << std::endl
+              << std::endl;
+    std::cout << "Read 'no thing' into a SomeData for default." << std::endl;
+    fs["no thing"] >> someData;
+    std::cout << "someData: " << someData << std::endl;
+    return true;
+}
+
+
+static bool readSomeInteger(cv::FileStorage &fs)
+{
     const cv::FileNode &fnSomeInteger = fs["someInteger"];
     if (fnSomeInteger.isInt()) {
         const int someInteger = fnSomeInteger;
         std::cout << "someInteger" << " = " << someInteger << std::endl;
-    } else {
-        std::cerr << "someInteger is not an integer" << std::endl;
-        return false;
+        return true;
     }
+    std::cerr << "someInteger is not an integer" << std::endl;
+    return false;
+}
 
+
+static bool readStringSequence(cv::FileStorage &fs)
+{
     const cv::FileNode &fnStringSequence = fs["stringSequence"];
     if (fnStringSequence.isSeq()) {
         const cv::FileNodeIterator pEnd = fnStringSequence.end();
@@ -133,11 +155,15 @@ static bool readSomeStuff(const char *filename)
             }
         }
         std::cout << " ]" << std::endl;
-    } else {
-        std::cerr << "stringSequence is not a sequence!" << std::endl;
-        return false;
+        return true;
     }
+    std::cerr << "stringSequence is not a sequence!" << std::endl;
+    return false;
+}
 
+
+static bool readStringToIntMap(cv::FileStorage &fs)
+{
     const cv::FileNode &fnStringToIntMap = fs["stringToIntMap"];
     if (fnStringToIntMap.isMap()) {
         const cv::FileNodeIterator pEnd = fnStringToIntMap.end();
@@ -155,29 +181,25 @@ static bool readSomeStuff(const char *filename)
             }
         }
         std::cout << " }" << std::endl;
-    } else {
-        std::cerr << "stringToIntMap is not a map!" << std::endl;
-        return false;
+        return true;
     }
+    std::cerr << "stringToIntMap is not a map!" << std::endl;
+    return false;
+}
 
-    cv::Mat ucharEye;
-    fs["ucharEye"]    >> ucharEye;
-    cv::Mat doubleZeros;
-    fs["doubleZeros"] >> doubleZeros;
-    SomeData someData;
-    fs["someData"]    >> someData;
-
-    std::cout << std::endl
-              << "ucharEye = "    << std::endl << ucharEye    << std::endl
-              << "doubleZeros = " << std::endl << doubleZeros << std::endl
-              << std::endl
-              << "someData: " << someData << std::endl
-              << std::endl;
-
-    std::cout << "Read 'no thing' into a SomeData for default." << std::endl;
-    fs["no thing"] >> someData;
-    std::cout << "someData: " << someData << std::endl;
-    return true;
+static bool readSomeStuff(const char *filename)
+{
+    std::cout << "Reading " << filename << " back now."
+              << std::endl << std::endl;
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
+    bool ok = fs.isOpened();
+    if (!ok) std::cerr << "Failed to open " << filename << std::endl;
+    ok = ok
+        && readSomeInteger(fs)
+        && readStringSequence(fs)
+        && readStringToIntMap(fs)
+        && readMatAndSomeData(fs);
+    return ok;
 }
 
 int main(int ac, char *av[])
