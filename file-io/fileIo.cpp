@@ -2,6 +2,16 @@
 #include <iostream>
 #include <string>
 
+
+// Stringify identifier X to show its name.
+//
+#define S(X) #X
+
+// Further stringify identifier X to show it as a C string literal.
+//
+#define Q(X) "\"" S(X) "\""
+
+
 static void showUsage(const char *av0)
 {
     std::cerr
@@ -38,22 +48,25 @@ class SomeData
 
     // Write value with name on fs as required by cv::FileStorage.
     //
+    // Use a sequence to tag the value with the class name for error
+    // checking and map the names of the data members to their values.
+    //
     friend void write(cv::FileStorage &fs,
                       const std::string &nameForDebuggingGuessingMaybe,
                       const SomeData &value)
     {
         std::cerr << "(" << nameForDebuggingGuessingMaybe << ")";
-        fs << "[" << "SomeData"
+        fs << "[" << S(SomeData)
            <<   "{"
-           <<      "anInt"   << value.anInt
-           <<      "aDouble" << value.aDouble
-           <<      "aString" << value.aString
+           <<      S(anInt)   << value.anInt
+           <<      S(aDouble) << value.aDouble
+           <<      S(aString) << value.aString
            <<   "}"
            << "]";
     }
 
-    // Read value from node using defaultValue as required by
-    // cv::FileStorage.
+    // Use some care to read value from node using defaultValue as required
+    // by cv::FileStorage.
     //
     friend void read(const cv::FileNode &node, SomeData &value,
                      const SomeData &defaultValue = SomeData())
@@ -61,28 +74,30 @@ class SomeData
         value = defaultValue;
         bool ok
             =  node.isSeq() && 2 == node.size()
-            && "SomeData" == std::string(node[0])
+            && S(SomeData) == std::string(node[0])
             && node[1].isMap() && 3 == node[1].size();
         if (ok) {
             const cv::FileNode &fn = node[1];
-            ok =   fn["anInt"].isInt()
-                && fn["aDouble"].isReal()
-                && fn["aString"].isString();
+            ok =   fn[S(anInt)].isInt()
+                && fn[S(aDouble)].isReal()
+                && fn[S(aString)].isString();
             if (ok) {
-                fn["anInt"]   >> value.anInt;
-                fn["aDouble"] >> value.aDouble;
-                fn["aString"] >> value.aString;
+                fn[S(anInt)]   >> value.anInt;
+                fn[S(aDouble)] >> value.aDouble;
+                fn[S(aString)] >> value.aString;
             }
         }
     }
 
+    // Pretty-print x on os for people.
+    //
     friend std::ostream &operator<<(std::ostream &os, const SomeData &x)
     {
-        os << "[" << "SomeData" << " "
+        os << "[" << Q(SomeData) << " "
            <<   "{"
-           <<     "\"" "anInt"   "\"" << " "         << x.anInt   << " " 
-           <<     "\"" "aDouble" "\"" << " "         << x.aDouble << " " 
-           <<     "\"" "aString" "\"" << " " << "\"" << x.aString << "\""
+           <<     Q(anInt)   << " "         << x.anInt   << " " 
+           <<     Q(aDouble) << " "         << x.aDouble << " " 
+           <<     Q(aString) << " " << "\"" << x.aString << "\""
            <<   "}"
            << "]";
         return os;
@@ -95,50 +110,57 @@ public:
 };
 
 
+// Write someInteger, stringSequence, stringToIntMap, ucharEye,
+// doubleZeros, and someData to filename.  Return true.
+//
 static bool writeSomeStuff(const char *filename)
 {
+    static const cv::Mat ucharEye = cv::Mat_<uchar>::eye(3, 3);
+    static const cv::Mat doubleZeros = cv::Mat_<double>::zeros(3, 1);
+    static const SomeData someData(1);
     std::cout << std::endl << "Writing " << filename << " ... ";
-    cv::Mat ucharEye = cv::Mat_<uchar>::eye(3, 3);
-    cv::Mat doubleZeros = cv::Mat_<double>::zeros(3, 1);
-    SomeData someData(1);
     cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-    fs << "someInteger" << 100
-       << "stringSequence" << "[" << "image.jpg" << "wild" << "lena.jpg" << "]"
-       << "stringToIntMap" << "{" << "One" << 1 << "Two" << 2 << "}"
-       << "ucharEye" << ucharEye
-       << "doubleZeros" << doubleZeros
-       << "someData" << someData;
+    fs << S(someInteger) << 100
+       << S(stringSequence) << "[" << "image.jpg" << "wild" << "lena.jpg" << "]"
+       << S(stringToIntMap) << "{" << "One" << 1 << "Two" << 2 << "}"
+       << S(ucharEye) << ucharEye
+       << S(doubleZeros) << doubleZeros
+       << S(someData) << someData;
     std::cout << " ... done." << std::endl;
     return true;
 }
 
+// Read someInteger from fs and show it as a map literal.
+//
 static bool readSomeInteger(const cv::FileStorage &fs)
 {
-    const cv::FileNode &fnSomeInteger = fs["someInteger"];
+    const cv::FileNode &fnSomeInteger = fs[S(someInteger)];
     if (fnSomeInteger.isInt()) {
         const int someInteger = fnSomeInteger;
-        std::cout << "{" << "\"" "someInteger" "\""
-                  << " " << someInteger << "}" << std::endl;
+        std::cout << "{" << Q(someInteger)
+                  << " " <<   someInteger << "}" << std::endl;
         return true;
     }
-    std::cerr << "someInteger is not an integer" << std::endl;
+    std::cerr << S(someInteger) " is not an integer" << std::endl;
     return false;
 }
 
+// Read stringSequence from fs and show it as a map literal.
+//
 static bool readStringSequence(const cv::FileStorage &fs)
 {
-    const cv::FileNode &fnStringSequence = fs["stringSequence"];
+    const cv::FileNode &fnStringSequence = fs[S(stringSequence)];
     if (fnStringSequence.isSeq()) {
         const cv::FileNodeIterator pEnd = fnStringSequence.end();
         cv::FileNodeIterator p = fnStringSequence.begin();
-        const char *separator = "{" "\"" "stringSequence" "\"" " " "[";
+        const char *separator = "{" Q(stringSequence) " " "[";
         for (; p != pEnd; ++p) {
             if ((*p).type() == cv::FileNode::STRING) {
                 const std::string s(*p);
                 std::cout << separator << "\"" << s << "\"";
                 separator = " ";
             } else {
-                std::cerr << "stringSequence element is not a string!"
+                std::cerr << S(stringSequence) " element is not a string!"
                           << std::endl;
                 return false;
             }
@@ -146,17 +168,19 @@ static bool readStringSequence(const cv::FileStorage &fs)
         std::cout << "]" << "}" << std::endl;
         return true;
     }
-    std::cerr << "stringSequence is not a sequence!" << std::endl;
+    std::cerr << S(stringSequence) " is not a sequence!" << std::endl;
     return false;
 }
 
+// Read stringToIntMap from fs and show it as a map literal.
+//
 static bool readStringToIntMap(const cv::FileStorage &fs)
 {
-    const cv::FileNode &fnStringToIntMap = fs["stringToIntMap"];
+    const cv::FileNode &fnStringToIntMap = fs[S(stringToIntMap)];
     if (fnStringToIntMap.isMap()) {
         const cv::FileNodeIterator pEnd = fnStringToIntMap.end();
         cv::FileNodeIterator p = fnStringToIntMap.begin();
-        const char *separator = "{" "\"" "stringToIntMap" "\"" " " "{";
+        const char *separator = "{" Q(stringToIntMap) " " "{";
         for (; p != pEnd; ++p) {
             if ((*p).isNamed()) {
                 const std::string n((*p).name());
@@ -164,43 +188,69 @@ static bool readStringToIntMap(const cv::FileStorage &fs)
                 std::cout << separator << "\"" << n << "\"" << " " << v;
                 separator = " ";
             } else {
-                std::cerr << "stringToIntMap node is not named!" << std::endl;
+                std::cerr << S(stringToIntMap) " node is not named!"
+                          << std::endl;
                 return false;
             }
         }
         std::cout << "}" << "}" << std::endl;
         return true;
     }
-    std::cerr << "stringToIntMap is not a map!" << std::endl;
+    std::cerr << S(stringToIntMap) " is not a map!" << std::endl;
     return false;
 }
 
+// Without checking for errors, read ucharEye, doubleZeros, and someData
+// from fs and show them as map literals.
+//
 static bool readMatAndSomeData(const cv::FileStorage &fs)
 {
     cv::Mat ucharEye;
-    fs["ucharEye"]    >> ucharEye;
     cv::Mat doubleZeros;
-    fs["doubleZeros"] >> doubleZeros;
     SomeData someData;
-    fs["someData"]    >> someData;
+    fs[S(ucharEye)]    >> ucharEye;
+    fs[S(doubleZeros)] >> doubleZeros;
+    fs[S(someData)]    >> someData;
     std::cout << std::endl
-              << "{" "\"" "ucharEye" "\"" " " << std::endl
+              << "{" Q(ucharEye) " " << std::endl
               << ucharEye << std::endl << "}" << std::endl << std::endl;
-    std::cout << "{" "\"" "doubleZeros" "\"" " " << doubleZeros << "}"
+    std::cout << "{" Q(doubleZeros) " " << doubleZeros << "}"
               << std::endl << std::endl;
-    std::cout << "{" "\"" "someData" "\"" " " << someData << "}"
-              << std::endl;
-    std::cout << "Read 'no thing' into a SomeData for default." << std::endl;
-    fs["no thing"] >> someData;
-    std::cout << "{" "\"" "someData" "\"" " " << someData << "}"
+    std::cout << "{" Q(someData) " " << someData << "}" << std::endl
               << std::endl;
     return true;
 }
 
+// Look up the bogus name "no thing" in fs and show the results for various
+// data types.  Return true.
+//
+static bool readNothing(const cv::FileStorage &fs)
+{
+    std::cout << "Read \"no thing\" into various types." << std::endl;
+    int noInt;
+    double noDouble;
+    std::string noString;
+    cv::Mat noMat;
+    SomeData noSomeData;
+    fs["no thing"] >> noInt;
+    fs["no thing"] >> noDouble;
+    fs["no thing"] >> noString;
+    fs["no thing"] >> noMat;
+    fs["no thing"] >> noSomeData;
+    std::cout << S(noInt)      ": " <<        noInt             << std::endl;
+    std::cout << S(noDouble)   ": " <<        noDouble          << std::endl;
+    std::cout << S(noString)   ": " << "'" << noString   << "'" << std::endl;
+    std::cout << S(noMat)      ": " <<        noMat             << std::endl;
+    std::cout << S(noSomeData) ": " <<        noSomeData        << std::endl;
+    return true;
+}
+
+// Read some stuff from filename.  Return true on success.  Return false on
+// failure.
+//
 static bool readSomeStuff(const char *filename)
 {
-    std::cout << "Reading " << filename << " back now."
-              << std::endl << std::endl;
+    std::cout << "Reading " << filename << " back." << std::endl << std::endl;
     const cv::FileStorage fs(filename, cv::FileStorage::READ);
     bool ok = fs.isOpened();
     if (!ok) std::cerr << "Failed to open " << filename << std::endl;
@@ -208,7 +258,8 @@ static bool readSomeStuff(const char *filename)
         && readSomeInteger(fs)
         && readStringSequence(fs)
         && readStringToIntMap(fs)
-        && readMatAndSomeData(fs);
+        && readMatAndSomeData(fs)
+        && readNothing(fs);
     return ok;
 }
 
