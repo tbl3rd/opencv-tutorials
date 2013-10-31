@@ -39,14 +39,17 @@ class SomeData
     // Write value with name on fs as required by cv::FileStorage.
     //
     friend void write(cv::FileStorage &fs,
-                      const std::string &name,
+                      const std::string &nameForDebuggingGuessingMaybe,
                       const SomeData &value)
     {
-        fs << "{"
-           << "SomeData_anInt"   << value.anInt
-           << "SomeData_aDouble" << value.aDouble
-           << "SomeData_aString" << value.aString
-           << "}";
+        std::cerr << "(" << nameForDebuggingGuessingMaybe << ")";
+        fs << "[" << "SomeData"
+           <<   "{"
+           <<      "anInt"   << value.anInt
+           <<      "aDouble" << value.aDouble
+           <<      "aString" << value.aString
+           <<   "}"
+           << "]";
     }
 
     // Read value from node using defaultValue as required by
@@ -55,29 +58,39 @@ class SomeData
     friend void read(const cv::FileNode &node, SomeData &value,
                      const SomeData &defaultValue = SomeData())
     {
-        if (node.empty()) {
-            value = defaultValue;
-        } else {
-            node["SomeData_anInt"]   >> value.anInt;
-            node["SomeData_aDouble"] >> value.aDouble;
-            node["SomeData_aString"] >> value.aString;
+        value = defaultValue;
+        bool ok
+            =  node.isSeq() && 2 == node.size()
+            && "SomeData" == std::string(node[0])
+            && node[1].isMap() && 3 == node[1].size();
+        if (ok) {
+            const cv::FileNode &fn = node[1];
+            ok =   fn["anInt"].isInt()
+                && fn["aDouble"].isReal()
+                && fn["aString"].isString();
+            if (ok) {
+                fn["anInt"]   >> value.anInt;
+                fn["aDouble"] >> value.aDouble;
+                fn["aString"] >> value.aString;
+            }
         }
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const SomeData &m)
+    friend std::ostream &operator<<(std::ostream &os, const SomeData &x)
     {
-        os << "{"
-           << "\"" "SomeData_anInt"   "\"" << " "         << m.anInt   << " "
-           << "\"" "SomeData_aDouble" "\"" << " "         << m.aDouble << " "
-           << "\"" "SomeData_aString" "\"" << " " << "\"" << m.aString << "\""
-           << "}";
+        os << "[" << "SomeData" << " "
+           <<   "{"
+           <<     "\"" "anInt"   "\"" << " "         << x.anInt   << " " 
+           <<     "\"" "aDouble" "\"" << " "         << x.aDouble << " " 
+           <<     "\"" "aString" "\"" << " " << "\"" << x.aString << "\""
+           <<   "}"
+           << "]";
         return os;
     }
 
 public:
 
-    SomeData(): anInt(1), aDouble(1.1), aString("default SomeData ctor") {}
-
+    SomeData(): anInt(1), aDouble(1.1), aString("default ctor") {}
     SomeData(int): anInt(97), aDouble(CV_PI), aString("mydata1234") {}
 };
 
@@ -95,7 +108,7 @@ static bool writeSomeStuff(const char *filename)
        << "ucharEye" << ucharEye
        << "doubleZeros" << doubleZeros
        << "someData" << someData;
-    std::cout << "done." << std::endl;
+    std::cout << " ... done." << std::endl;
     return true;
 }
 
@@ -209,7 +222,7 @@ int main(int ac, char *av[])
         std::cerr << std::endl
                   << "Tip: Open " << av[1]
                   << " with a text editor to see the serialized data."
-                  << std::endl;
+                  << std::endl << std::endl;
         return 0;
     }
     showUsage(av[0]);
