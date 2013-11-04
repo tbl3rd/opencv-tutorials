@@ -5,23 +5,26 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: howToScanImages
+EXECUTABLE := howToScanImages
+IMAGEFILE := ../resources/Twas_Ever_Thus500.jpg
+
+main: $(EXECUTABLE)
 
 gray: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./howToScanImages ../resources/Twas_Ever_Thus500.jpg 200 g
+	./$(EXECUTABLE) $(IMAGEFILE) 200 g
 
 color: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./howToScanImages ../resources/Twas_Ever_Thus500.jpg 200
+	./$(EXECUTABLE) $(IMAGEFILE) 200
 
 test: gray color
 
 clean:
-	rm -rf howToScanImages *.dSYM
+	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./howToScanImages
+	lldb ./$(EXECUTABLE) -- $(IMAGEFILE) 200
 
-.PHONY: main gray color test clean debug
+.PHONY: main help gray color test clean debug

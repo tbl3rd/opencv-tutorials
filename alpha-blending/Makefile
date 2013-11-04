@@ -5,21 +5,26 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
+EXECUTABLE := alphaBlend
 LOGOS := ../resources/LinuxLogo.jpg ../resources/WindowsLogo.jpg
 
-main: alphaBlend
+main: $(EXECUTABLE)
+
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./$(EXECUTABLE)
 
 color: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./alphaBlend $(LOGOS)
+	./$(EXECUTABLE) $(LOGOS)
 
 test: color
 
 clean:
-	rm -rf alphaBlend *.dSYM
+	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./alphaBlend -- $(LOGOS)
+	lldb ./$(EXECUTABLE) -- $(LOGOS)
 
 .PHONY: main color test clean debug

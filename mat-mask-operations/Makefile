@@ -5,23 +5,30 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: matMaskOperations
+EXECUTABLE := matMaskOperations
+IMAGEFILE := ../resources/lena.tiff g
+
+main: $(EXECUTABLE)
+
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./$(EXECUTABLE)
 
 gray: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./matMaskOperations ../resources/lena.tiff g
+	./$(EXECUTABLE) $(IMAGEFILE)
 
 color: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./matMaskOperations ../resources/lena.tiff
+	./$(EXECUTABLE) ../resources/lena.tiff
 
 test: gray color
 
 clean:
-	rm -rf matMaskOperations *.dSYM
+	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./matMaskOperations --  ../resources/lena.tiff
+	lldb ./$(EXECUTABLE) --  ../resources/lena.tiff
 
-.PHONY: main gray color test clean debug
+.PHONY: main help gray color test clean debug

@@ -126,9 +126,9 @@ int main(int, const char *[])
     drawYellowRectangle(rookImage);
     drawGreenLines(rookImage);
     cv::imshow("Drawing 1: Atom", atomImage);
-    cv::moveWindow("Drawing 1: Atom", 0, 200);
+    cv::moveWindow("Drawing 1: Atom", 0, 0);
     cv::imshow("Drawing 2: Rook", rookImage);
-    cv::moveWindow("Drawing 2: Rook", SCALE, 200);
+    cv::moveWindow("Drawing 2: Rook", SCALE, 0);
     cv::waitKey(0);
     return 0;
 }

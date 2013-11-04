@@ -5,17 +5,24 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: dft
+EXECUTABLE := dft
+IMAGEFILE := ../resources/lena.jpg
+
+main: $(EXECUTABLE)
+
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./$(EXECUTABLE)
 
 test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./dft
+	./$(EXECUTABLE) $(IMAGEFILE)
 
 clean:
-	rm -rf dft *.dSYM
+	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./dft
+	lldb ./$(EXECUTABLE) -- $(IMAGEFILE)
 
-.PHONY: main test clean debug
+.PHONY: main help test clean debug

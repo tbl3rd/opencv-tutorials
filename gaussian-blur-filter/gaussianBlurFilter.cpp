@@ -1,5 +1,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <iostream>
 
 
 static const int MAX_KERNEL_LENGTH = 31;
@@ -52,7 +53,7 @@ static bool showHomogeneousBlur(const cv::Mat &src)
     if (displayCaption(src, caption)) return true;
     for (int i = 1; i < MAX_KERNEL_LENGTH; i += 2) {
         const cv::Size kernelSize(i, i);
-        cv::Mat dst;    
+        cv::Mat dst;
         cv::blur(src, dst, kernelSize, anchor);
         if (displayShort(dst, caption)) return true;
     }
@@ -67,7 +68,7 @@ static bool showGaussianBlur(const cv::Mat &src)
     if (displayCaption(src, caption)) return true;
     for (int i = 1; i < MAX_KERNEL_LENGTH; i += 2) {
         const cv::Size kernelSize(i, i);
-        cv::Mat dst;    
+        cv::Mat dst;
         cv::GaussianBlur(src, dst, kernelSize, sigmaX, sigmaY);
         if (displayShort(dst, caption)) return true;
     }
@@ -80,7 +81,7 @@ static bool showMedianBlur(const cv::Mat &src)
     if (displayCaption(src, caption)) return true;
     for (int i = 1; i < MAX_KERNEL_LENGTH; i += 2) {
         const int kernelSize = i;
-        cv::Mat dst;    
+        cv::Mat dst;
         cv::medianBlur(src, dst, kernelSize);
         if (displayShort(dst, caption)) return true;
     }
@@ -95,7 +96,7 @@ static bool showBilateralBlur(const cv::Mat &src)
         const int pixelNeighborhoodDiameter = i;
         const double sigmaColor = 2.0 * i;
         const double sigmaSpace = 0.5 * i;
-        cv::Mat dst;    
+        cv::Mat dst;
         cv::bilateralFilter(src, dst, pixelNeighborhoodDiameter,
                             sigmaColor, sigmaSpace);
         if (displayShort(dst, caption)) return true;
@@ -112,17 +113,31 @@ static bool showOriginal(const cv::Mat &src)
     return false;
 }
 
+
 int main(int ac, const char *av[])
 {
-    cv::Mat src = cv::imread(av[1], 1);
-    const int stop
-        =  showOriginal(src)
-        || showHomogeneousBlur(src)
-        || showGaussianBlur(src)
-        || showMedianBlur(src)
-        || showBilateralBlur(src)
-        || displayCaption(src, "End: Press a key!");
-    if (stop) return 0;
-    cv::waitKey(0);
-    return 0;
+    if (ac == 2) {
+        const cv::Mat src = cv::imread(av[1], 1);
+        if (!src.empty()) {
+            const int stop
+                =  showOriginal(src)
+                || showHomogeneousBlur(src)
+                || showGaussianBlur(src)
+                || showMedianBlur(src)
+                || showBilateralBlur(src)
+                || displayCaption(src, "End: Press a key!");
+            if (stop) return 0;
+            cv::waitKey(0);
+            return 0;
+        }
+    }
+    std::cerr << av[0] << ": Demonstrate some blur filters."
+              << std::endl << std::endl
+              << "Usage: " << av[0] << " <image-file>" << std::endl
+              << std::endl
+              << "Where: <image-file> is the name of an image file."
+              << std::endl << std::endl
+              << "Example: " << av[0] << " ../resources/lena.jpg"
+              << std::endl << std::endl;
+    return 1;
 }

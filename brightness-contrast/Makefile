@@ -5,19 +5,26 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: brightContrast
+EXECUTABLE := brightContrast
+IMAGEFILE := ../resources/lena.jpg
+
+main: $(EXECUTABLE)
+
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./$(EXECUTABLE)
 
 color: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./brightContrast ../resources/lena.jpg
+	./$(EXECUTABLE) $(IMAGEFILE)
 
 test: color
 
 clean:
-	rm -rf brightContrast *.dSYM
+	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./brightContrast --  ../resources/lena.jpg
+	lldb ./$(EXECUTABLE) --  $(IMAGEFILE)
 
-.PHONY: main color test clean debug
+.PHONY: main help color test clean debug

@@ -6,27 +6,29 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: fileIo
+EXECUTABLE := fileIo
+
+main: $(EXECUTABLE)
 
 help: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./fileIo
+	./$(EXECUTABLE)
 
 somedata.xml.gz: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./fileIo ./somedata.xml.gz
+	./$(EXECUTABLE) ./somedata.xml.gz
 
 somedata.yaml.gz: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./fileIo ./somedata.yaml.gz
+	./$(EXECUTABLE) ./somedata.yaml.gz
 
 test: somedata.xml.gz somedata.yaml.gz
 
 clean:
-	rm -rf fileIo *.dSYM somedata.xml.gz somedata.yaml.gz
+	rm -rf $(EXECUTABLE) *.dSYM somedata.xml.gz somedata.yaml.gz
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./fileIo -- somedata.yaml
+	lldb ./$(EXECUTABLE) -- somedata.yaml
 
 .PHONY: main help test clean debug

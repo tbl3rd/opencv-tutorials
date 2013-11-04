@@ -5,17 +5,24 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: gaussianBlurFilter
+EXECUTABLE := gaussianBlurFilter
+IMAGEFILE := ../resources/lena.jpg
+
+main: $(EXECUTABLE)
+
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./$(EXECUTABLE)
 
 test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./gaussianBlurFilter ../resources/lena.jpg
+	./$(EXECUTABLE) $(IMAGEFILE)
 
 clean:
-	rm -rf gaussianBlurFilter *.dSYM
+	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./gaussianBlurFilter -- ../resources/lena.jpg
+	lldb ./$(EXECUTABLE) -- $(IMAGEFILE)
 
 .PHONY: main test clean debug

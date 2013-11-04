@@ -5,18 +5,25 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-main: loadAndDisplayImage
+EXECUTABLE := loadAndDisplayImage
+IMAGEFILE := ../resources/Twas_Ever_Thus500.jpg
+
+main: $(EXECUTABLE)
+
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./$(EXECUTABLE)
 
 test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./loadAndDisplayImage ../resources/Twas_Ever_Thus500.jpg
+	./$(EXECUTABLE) $(IMAGEFILE)
 
 clean:
-	rm -rf loadAndDisplayImage gray-image.jpg *.dSYM
+	rm -rf $(EXECUTABLE) gray-image.jpg *.dSYM
 
-debug: loadAndDisplayImage
+debug: $(EXECUTABLE)
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./loadAndDisplayImage ../resources/Twas_Ever_Thus500.jpg
+	lldb ./$(EXECUTABLE) -- $(IMAGEFILE)
 
 
 .PHONY: main test clean debug

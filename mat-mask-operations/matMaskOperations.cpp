@@ -1,8 +1,8 @@
-#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
-g
+
+
 // Show a usage message on cout for program named av0.
 //
 static void showUsage(const char *av0)

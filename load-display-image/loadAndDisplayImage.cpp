@@ -1,5 +1,7 @@
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <iostream>
+
 
 static void dumpBunchOfMats(void)
 {
@@ -16,20 +18,29 @@ static void dumpBunchOfMats(void)
 
 int main (int ac, char *av[])
 {
-    const char *const imageName = av[1];
-    const cv::Mat image = cv::imread(imageName, 1);
-    if (ac != 2 || !image.data) {
-        std::cout << "No image data" << std::endl;
-        return 1;
+    if (ac == 2) {
+        const char *const imageName = av[1];
+        const cv::Mat image = cv::imread(imageName, 1);
+        if (image.data) {
+            cv::Mat grayImage;
+            cv::cvtColor(image, grayImage, cv::COLOR_BGR2GRAY);
+            cv::imwrite("./gray-image.jpg", grayImage);
+            cv::namedWindow(imageName, cv::WINDOW_AUTOSIZE);
+            cv::namedWindow("Gray Image", cv::WINDOW_AUTOSIZE);
+            cv::imshow(imageName, image);
+            cv::imshow("Gray Image", grayImage);
+            cv::waitKey(0);
+            dumpBunchOfMats();
+            return 0;
+        }
     }
-    cv::Mat grayImage;
-    cv::cvtColor(image, grayImage, cv::COLOR_BGR2GRAY);
-    cv::imwrite("./gray-image.jpg", grayImage);
-    cv::namedWindow(imageName, cv::WINDOW_AUTOSIZE);
-    cv::namedWindow("Gray Image", cv::WINDOW_AUTOSIZE);
-    cv::imshow(imageName, image);
-    cv::imshow("Gray Image", grayImage);
-    cv::waitKey(0);
-    dumpBunchOfMats();
-    return 0;
+    std::cerr << av[0] << ": Load and display an image from a file."
+              << std::endl << std::endl
+              << "Usage: " << av[0] << " <image-file>" << std::endl
+              << std::endl
+              << "Where: <image-file> is the name of an image file." 
+              << std::endl << std::endl
+              << "Example: " << av[0] << " ../resources/Twas_Ever_Thus500.jpg"
+              << std::endl << std::endl;
+    return 1;
 }

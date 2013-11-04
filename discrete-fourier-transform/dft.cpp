@@ -1,6 +1,6 @@
-#include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <iostream>
 
 
 // Show image with label in an unobstructed window.
@@ -101,16 +101,28 @@ static cv::Mat normalizedLogDiscreteFourierTransform(const cv::Mat &image)
     return result;
 }
 
+
 int main(int ac, const char *av[])
 {
-    const char *const filename = ac > 1 ? av[1] : "../resources/lena.jpg";
-    const cv::Mat image = cv::imread(filename, cv::IMREAD_GRAYSCALE);
-    if (image.empty()) return 1;
-    showImage("Input Image", image);
-    const cv::Mat nldft = normalizedLogDiscreteFourierTransform(image);
-    showImage("normalized logarithmic DFT", nldft);
-    const cv::Mat output = centerOrigin(nldft);
-    showImage("spectrum magnitude", output);
-    cv::waitKey();
-    return 0;
+    if (ac == 2) {
+        const cv::Mat image = cv::imread(av[1], cv::IMREAD_GRAYSCALE);
+        if (image.data) {
+            showImage("Input Image", image);
+            const cv::Mat nldft = normalizedLogDiscreteFourierTransform(image);
+            showImage("normalized logarithmic DFT", nldft);
+            const cv::Mat output = centerOrigin(nldft);
+            showImage("spectrum magnitude", output);
+            cv::waitKey();
+            return 0;
+        }
+    }
+    std::cerr << av[0] << ": Demonstrate the discrete Fourier transform."
+              << std::endl << std::endl
+              << "Usage: " << av[0] << " <image-file>" << std::endl
+              << std::endl
+              << "Where: <image-file> is the name of an image file."
+              << std::endl << std::endl
+              << "Example: " << av[0] << " ../resources/lena.jpg"
+              << std::endl << std::endl;
+    return 1;
 }
