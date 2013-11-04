@@ -7,6 +7,9 @@ CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 main: erodeDilate
 
+help: main
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH ./erodeDilate
+
 test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	./erodeDilate ../resources/lena.jpg

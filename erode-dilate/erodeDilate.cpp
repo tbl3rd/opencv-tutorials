@@ -1,102 +1,118 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <iostream>
 
 
-static int elemToShape(int erosion_elem)
-{
-    static const int shape[] = {
-        cv::MORPH_RECT,
-        cv::MORPH_CROSS,
-        cv::MORPH_ELLIPSE,
-    };
-    static const int count = sizeof shape / sizeof shape[0];
-    assert(erosion_elem < count);
-    return shape[erosion_elem];
-}
+// A display to demonstrate the erode() and dilate() operators.
+//
+class Display {
 
-typedef void (*TrackbarCallback)(int position, void *cbState);
-typedef void (*ErodeOrDilate)(const cv::Mat &src,
-                              cv::Mat &dst,
-                              const cv::Mat &kernel);
-
-struct Display {
+    // The window caption.
+    //
     const char *const caption;
-    TrackbarCallback fn;
-    ErodeOrDilate something;
-    const cv::Mat &src;
-    cv::Mat dst;
-    int elem;
-    int size;
-    Display(const char *c, TrackbarCallback f, const cv::Mat &s):
-        caption(c), fn(f), src(s), elem(0), size(0)
-    {}
+
+    // The position of the Element Shape and Kernel Shape trackbars.
+    //
+    int elementBar;
+    int sizeBar;
+
+    // The callback passed to createTrackbar() where all state is at p.
+    //
+    static void show(int positionIgnored,  void *p)
+    {
+        static const int elementShape[] = {
+            cv::MORPH_RECT, cv::MORPH_CROSS, cv::MORPH_ELLIPSE,
+        };
+        static const int count = sizeof elementShape / sizeof elementShape[0];
+        Display *pD = (Display *)p;
+        assert(pD->elementBar < count);
+        const int shape = elementShape[pD->elementBar];
+        const int size = 1 + 2 * pD->sizeBar;
+        const cv::Size kernelSize(size, size);
+        const cv::Point anchor(pD->sizeBar, pD->sizeBar);
+        const cv::Mat element
+            = cv::getStructuringElement(shape, kernelSize, anchor);
+        pD->erodeOrDilate(element);
+        cv::imshow(pD->caption, pD->dstImage);
+    }
+
+protected:
+
+    // The source and destination images for erodeOrDilate().
+    //
+    const cv::Mat &srcImage;
+    cv::Mat dstImage;
+
+    // Override this to call f(srcImage, dstImage, element) where f() is
+    // either erode() or dilate().
+    //
+    virtual void erodeOrDilate(const cv::Mat &element) = 0;
+
+public:
+
+    // Show this demo display.
+    //
+    void operator()(void) { Display::show(0, this); }
+
+    // Construct a display with the caption c operating on source image s.
+    //
+    Display(const char *c, const cv::Mat &s):
+        caption(c), srcImage(s), elementBar(0), sizeBar(0)
+    {
+        static const int maxElement = 2;
+        static const int maxKernelSize = 21;
+        static int moveX = 0;
+        cv::namedWindow(caption, cv::WINDOW_AUTOSIZE);
+        cv::moveWindow(caption, moveX, 0);
+        cv::createTrackbar("Element Shape:",
+                           caption, &elementBar, maxElement, &show, this);
+        cv::createTrackbar("Kernel Size:",
+                           caption, &sizeBar, maxKernelSize, &show, this);
+        moveX += srcImage.cols;
+    }
 };
 
-static void showErosion(int, void *p)
+// Call erode() from Display::show().
+//
+class ErosionDisplay: public Display {
+    virtual void erodeOrDilate(const cv::Mat &element)
+    {
+        cv::erode(srcImage, dstImage, element);
+    }
+public:
+    ErosionDisplay(const cv::Mat &s): Display("Erosion Demo", s) {}
+};
+
+// Call dilate() from Display::show().
+//
+class DilationDisplay: public Display {
+    virtual void erodeOrDilate(const cv::Mat &element)
+    {
+        cv::dilate(srcImage, dstImage, element);
+    }
+public:
+    DilationDisplay(const cv::Mat &s): Display("Dilation Demo", s) {}
+};
+
+
+int main(int ac, const char *av[])
 {
-    Display *pD = (Display *)p;
-    const int shape = elemToShape(pD->elem);
-    const int size = 1 + 2 * pD->size;
-    const cv::Size kernelSize(size, size);
-    const cv::Point anchor(pD->size, pD->size);
-    cv::Mat element = cv::getStructuringElement(shape, kernelSize, anchor);
-    cv::erode(pD->src, pD->dst, element);
-    cv::imshow(pD->caption, pD->dst);
-}
-
-static void showDilation(int,  void *p)
-{
-    Display *pD = (Display *)p;
-    const int shape = elemToShape(pD->elem);
-    const int size = 1 + 2 * pD->size;
-    const cv::Size kernelSize(size, size);
-    const cv::Point anchor(pD->size, pD->size);
-    cv::Mat element = cv::getStructuringElement(shape, kernelSize, anchor);
-    cv::dilate(pD->src, pD->dst, element);
-    cv::imshow(pD->caption, pD->dst);
-}
-
-static void showSomething(int,  void *p)
-{
-    Display *pD = (Display *)p;
-    const int shape = elemToShape(pD->elem);
-    const int size = 1 + 2 * pD->size;
-    const cv::Size kernelSize(size, size);
-    const cv::Point anchor(pD->size, pD->size);
-    cv::Mat element = cv::getStructuringElement(shape, kernelSize, anchor);
-    (*pD->something)(pD->src, pD->dst, element);
-    cv::imshow(pD->caption, pD->dst);
-}
-
-static void makeTrackbarWindow(Display &d)
-{
-    static const int maxElem = 2;
-    static const int maxKernelSize = 21;
-    static int moveX = 0;
-    cv::namedWindow(d.caption, cv::WINDOW_AUTOSIZE);
-    cv::moveWindow(d.caption, moveX, 0);
-    cv::createTrackbar("Element Shape:",
-                       d.caption, &d.elem, maxElem, d.fn, &d);
-    cv::createTrackbar("Kernel Size:",
-                       d.caption, &d.size, maxKernelSize, d.fn, &d);
-    moveX += d.src.cols;
-}
-
-
-int main(int argc, const char *argv[])
-{
-    const cv::Mat src = cv::imread(argv[1]);
-    if (!src.data) return -1;
-
-    Display erosion("Erosion Demo", showErosion, src);
-    Display dilation("Dilation Demo", showDilation, src);
-
-    makeTrackbarWindow(erosion);
-    makeTrackbarWindow(dilation);
-
-    showErosion(0, &erosion);
-    showDilation(0, &dilation);
-
-    cv::waitKey(0);
-    return 0;
+    if (ac == 2) {
+        const cv::Mat srcImage = cv::imread(av[1]);
+        if (srcImage.data) {
+            ErosionDisplay  erode(srcImage);  erode();
+            DilationDisplay dilate(srcImage); dilate();
+            cv::waitKey(0);
+            return 0;
+        }
+    }
+    std::cerr << av[0] << ": Demonstrate erosion and dilation." << std::endl
+              << std::endl
+              << "Usage: " << av[0] << " <image-file>" << std::endl
+              << std::endl
+              << "Where: <image-file> is the name of an image file." 
+              << std::endl << std::endl
+              << "Example: " << av[0] << " ../resources/lena.jpg"
+              << std::endl << std::endl;
+    return 1;
 }
