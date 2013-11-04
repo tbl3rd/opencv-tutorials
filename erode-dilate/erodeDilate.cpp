@@ -3,38 +3,18 @@
 #include <iostream>
 
 
-// A display to demonstrate the erode() and dilate() operators.
+// The element shapes supported by getStructuringElement().
 //
-class Display {
+static const int theElementShapes[] = {
+    cv::MORPH_RECT, cv::MORPH_CROSS, cv::MORPH_ELLIPSE,
+};
+static const int theElementShapesCount =
+    sizeof theElementShapes / sizeof theElementShapes[0];
 
-    // The window caption.
-    //
-    const char *const caption;
 
-    // The position of the Element Shape and Kernel Shape trackbars.
-    //
-    int elementBar;
-    int sizeBar;
-
-    // The callback passed to createTrackbar() where all state is at p.
-    //
-    static void show(int positionIgnored,  void *p)
-    {
-        static const int elementShape[] = {
-            cv::MORPH_RECT, cv::MORPH_CROSS, cv::MORPH_ELLIPSE,
-        };
-        static const int count = sizeof elementShape / sizeof elementShape[0];
-        Display *pD = (Display *)p;
-        assert(pD->elementBar < count);
-        const int shape = elementShape[pD->elementBar];
-        const int size = 1 + 2 * pD->sizeBar;
-        const cv::Size kernelSize(size, size);
-        const cv::Point anchor(pD->sizeBar, pD->sizeBar);
-        const cv::Mat element
-            = cv::getStructuringElement(shape, kernelSize, anchor);
-        pD->erodeOrDilate(element);
-        cv::imshow(pD->caption, pD->dstImage);
-    }
+// A display to demonstrate the erode() and dilate() morphology operators.
+//
+class DemoDisplay {
 
 protected:
 
@@ -48,50 +28,82 @@ protected:
     //
     virtual void erodeOrDilate(const cv::Mat &element) = 0;
 
+private:
+
+    // The window caption.
+    //
+    const char *const caption;
+
+    // The position of the Element Shape and Kernel Shape trackbars.
+    //
+    int elementBar;
+    int sizeBar;
+
+    // The callback passed to createTrackbar() where all state is at p.
+    //
+    static void show(int positionIgnoredUseThisInstead,  void *p)
+    {
+        DemoDisplay *pD = (DemoDisplay *)p;
+        assert(pD->elementBar < theElementShapesCount);
+        const int shape = theElementShapes[pD->elementBar];
+        const int size = 1 + 2 * pD->sizeBar;
+        const cv::Size kernelSize(size, size);
+        const cv::Point anchor(pD->sizeBar, pD->sizeBar);
+        const cv::Mat element
+            = cv::getStructuringElement(shape, kernelSize, anchor);
+        pD->erodeOrDilate(element);
+        cv::imshow(pD->caption, pD->dstImage);
+    }
+
+    // Add a trackbar with label of range 0 to max in bar.
+    //
+    void makeTrackbar(const char *label, int *bar, int max)
+    {
+        cv::createTrackbar(label, caption, bar, max, &show, this);
+    }
+
 public:
 
-    // Show this demo display.
+    // Show this demo display window.
     //
-    void operator()(void) { Display::show(0, this); }
+    void operator()(void) { DemoDisplay::show(0, this); }
 
     // Construct a display with the caption c operating on source image s.
     //
-    Display(const char *c, const cv::Mat &s):
+    DemoDisplay(const char *c, const cv::Mat &s):
         caption(c), srcImage(s), elementBar(0), sizeBar(0)
     {
-        static const int maxElement = 2;
+        static const int maxElement = theElementShapesCount - 1;
         static const int maxKernelSize = 21;
         static int moveX = 0;
         cv::namedWindow(caption, cv::WINDOW_AUTOSIZE);
+        makeTrackbar("Element Shape:", &elementBar, maxElement);
+        makeTrackbar("Kernel Size:",   &sizeBar,    maxKernelSize);
         cv::moveWindow(caption, moveX, 0);
-        cv::createTrackbar("Element Shape:",
-                           caption, &elementBar, maxElement, &show, this);
-        cv::createTrackbar("Kernel Size:",
-                           caption, &sizeBar, maxKernelSize, &show, this);
         moveX += srcImage.cols;
     }
 };
 
-// Call erode() from Display::show().
+// Call erode() from DemoDisplay::show().
 //
-class ErosionDisplay: public Display {
+class ErosionDemoDisplay: public DemoDisplay {
     virtual void erodeOrDilate(const cv::Mat &element)
     {
         cv::erode(srcImage, dstImage, element);
     }
 public:
-    ErosionDisplay(const cv::Mat &s): Display("Erosion Demo", s) {}
+    ErosionDemoDisplay(const cv::Mat &s): DemoDisplay("Erosion Demo", s) {}
 };
 
-// Call dilate() from Display::show().
+// Call dilate() from DemoDisplay::show().
 //
-class DilationDisplay: public Display {
+class DilationDemoDisplay: public DemoDisplay {
     virtual void erodeOrDilate(const cv::Mat &element)
     {
         cv::dilate(srcImage, dstImage, element);
     }
 public:
-    DilationDisplay(const cv::Mat &s): Display("Dilation Demo", s) {}
+    DilationDemoDisplay(const cv::Mat &s): DemoDisplay("Dilation Demo", s) {}
 };
 
 
@@ -100,8 +112,8 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat srcImage = cv::imread(av[1]);
         if (srcImage.data) {
-            ErosionDisplay  erode(srcImage);  erode();
-            DilationDisplay dilate(srcImage); dilate();
+            ErosionDemoDisplay  erode(srcImage);  erode();
+            DilationDemoDisplay dilate(srcImage); dilate();
             cv::waitKey(0);
             return 0;
         }
