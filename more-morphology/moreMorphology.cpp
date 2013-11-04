@@ -56,7 +56,7 @@ private:
     //
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
-        DemoDisplay *pD = (DemoDisplay *)p;
+        DemoDisplay *const pD = (DemoDisplay *)p;
         assert(pD->elementBar < theElementShapesCount);
         assert(pD->opBar < theMorphOpsCount);
         const int operation = theMorphOps[pD->opBar];

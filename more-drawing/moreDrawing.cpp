@@ -2,6 +2,11 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
+
+// An iteration limit in some for loops.
+//
+static const int stepMax = std::numeric_limits<uchar>::max();
+
 // A single source of randomness for this program.
 //
 static cv::RNG rng(0xffffffff);
@@ -63,7 +68,7 @@ static cv::Point randomPoint(const cv::Mat &image)
 //
 static int randomLines(cv::Mat &image)
 {
-    for (int i = 0; i < UCHAR_MAX; ++i) {
+    for (int i = 0; i < stepMax; ++i) {
         const int thickness = rng.uniform(1, 10);
         cv::line(image, randomPoint(image), randomPoint(image),
                  randomColor(), thickness);
@@ -76,7 +81,7 @@ static int randomLines(cv::Mat &image)
 //
 static int randomRectangles(cv::Mat &image)
 {
-    for (int i = 0; i < UCHAR_MAX; ++i) {
+    for (int i = 0; i < stepMax; ++i) {
         const int thickness = MAX(rng.uniform(-3, 10), CV_FILLED);
         cv::rectangle(image, randomPoint(image), randomPoint(image),
                       randomColor(), thickness);
@@ -89,7 +94,7 @@ static int randomRectangles(cv::Mat &image)
 //
 static int randomEllipticArcs(cv::Mat &image)
 {
-    for (int i = 0; i < UCHAR_MAX; ++i) {
+    for (int i = 0; i < stepMax; ++i) {
         const cv::Point center = randomPoint(image);
         const cv::Size axes(rng.uniform(0, 200), rng.uniform(0, 200));
         const double angle = rng.uniform(0, 180);
@@ -107,7 +112,7 @@ static int randomTriangles(cv::Mat &image)
 {
     static const int vertexCount = 3;
     static const int polyCount = 2;
-    for (int i = 0; i< UCHAR_MAX; ++i) {
+    for (int i = 0; i< stepMax; ++i) {
         const cv::Point points[polyCount][vertexCount] = {
             randomPoint(image), randomPoint(image), randomPoint(image),
             randomPoint(image), randomPoint(image), randomPoint(image)
@@ -128,7 +133,7 @@ static int randomFilledTriangles(cv::Mat &image)
 {
     static const int vertexCount = 3;
     static const int polyCount = 2;
-    for (int i = 0; i < UCHAR_MAX; ++i) {
+    for (int i = 0; i < stepMax; ++i) {
         const cv::Point points[polyCount][vertexCount] = {
             randomPoint(image), randomPoint(image), randomPoint(image),
             randomPoint(image), randomPoint(image), randomPoint(image)
@@ -145,7 +150,7 @@ static int randomFilledTriangles(cv::Mat &image)
 //
 static int randomCircles(cv::Mat &image)
 {
-    for (int i = 0; i < UCHAR_MAX; ++i) {
+    for (int i = 0; i < stepMax; ++i) {
         const cv::Point center = randomPoint(image);
         const int radius = rng.uniform(0, 300);
         const int thickness = rng.uniform(-1, 9);
@@ -160,7 +165,7 @@ static int randomCircles(cv::Mat &image)
 static int randomText(cv::Mat &image)
 {
     static const char msg[] = "Testing text rendering";
-    for (int i = 1; i < UCHAR_MAX; ++i) {
+    for (int i = 1; i < stepMax; ++i) {
         const cv::Point origin = randomPoint(image);
         const double scale = 0.1 + 0.05 * rng.uniform(0, 100);
         const int thickness = rng.uniform(1, 10);
@@ -184,7 +189,7 @@ static int bigFinale(cv::Mat &image)
         = cv::getTextSize(msg, face, scale, thickness, 0);
     const cv::Size size = image.size() - msgSize;
     const cv::Point origin(size.width / 2, size.height / 2);
-    for (int i = 0; i < UCHAR_MAX; ++i) {
+    for (int i = 0; i < stepMax; ++i) {
         const cv::Scalar color(i, i, 255);
         cv::Mat fade = image - cv::Scalar::all(i);
         cv::putText(fade, msg, origin, face, scale, color, thickness);

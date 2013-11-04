@@ -43,7 +43,7 @@ private:
     //
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
-        DemoDisplay *pD = (DemoDisplay *)p;
+        DemoDisplay *const pD = (DemoDisplay *)p;
         assert(pD->elementBar < theElementShapesCount);
         const int shape = theElementShapes[pD->elementBar];
         const int size = 1 + 2 * pD->sizeBar;
