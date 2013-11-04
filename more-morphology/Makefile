@@ -5,8 +5,8 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-EXECUTABLE := erodeDilate
-IMAGEFILE := ../resources/lena.jpg
+EXECUTABLE := moreMorphology
+IMAGEFILE := ../resources/mandrill.tiff
 
 main: $(EXECUTABLE)
 
@@ -24,4 +24,4 @@ debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	lldb ./$(EXECUTABLE) -- $(IMAGEFILE)
 
-.PHONY: main test clean debug
+.PHONY: main help test clean debug
