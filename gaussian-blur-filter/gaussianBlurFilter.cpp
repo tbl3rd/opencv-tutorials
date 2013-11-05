@@ -23,6 +23,8 @@ static bool displayLong(const cv::Mat &dst, const char *window)
     return displayDst(dst, window, DELAY_CAPTION);
 }
 
+// Display dst in the named window.  Lay windows out 3 across.
+//
 static void makeWindow(const cv::Mat &dst, const char *window)
 {
     static int moveCount = 0;
