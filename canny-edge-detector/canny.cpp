@@ -23,11 +23,20 @@ class DemoDisplay {
 
 protected:
 
-    // Source, black, and destination images for apply().
+    // Source and destination images for apply().
     //
     const cv::Mat &srcImage;
-    const cv::Mat blackImage;
     cv::Mat dstImage;
+
+    // Return a grayscale copy of image blurred by a kernel of size kSize.
+    //
+    static cv::Mat grayBlur(const cv::Mat &image, int kSize) {
+        static const cv::Size kernel(kSize, kSize);
+        cv::Mat gray, result;
+        cv::cvtColor(image, gray, cv::COLOR_RGB2GRAY);
+        cv::blur(gray, result, kernel);
+        return result;
+    }
 
     // Apply Canny() with threshold to srcImage to construct an mask of
     // detected edges and overlay that mask back onto srcImage.
@@ -35,13 +44,15 @@ protected:
     void apply(double threshold)
     {
         static const int ratio = 3;
-        static const int kernelSize = 3;
-        static const cv::Size kernel(kernelSize, kernelSize);
-        cv::Mat gray, blur, edgeMask;
-        cv::cvtColor(srcImage, gray, cv::COLOR_RGB2GRAY);
-        cv::blur(gray, blur, kernel);
-        cv::Canny(blur, edgeMask, threshold, ratio * threshold, kernelSize);
-        blackImage.copyTo(dstImage);
+        static const int kSize = 3;
+        static const cv::Size kernel(kSize, kSize);
+        static const cv::Mat black
+            = cv::Mat::zeros(srcImage.size(), srcImage.type());
+        static const cv::Mat grayBlur
+            = DemoDisplay::grayBlur(srcImage, kSize);
+        cv::Mat edgeMask;
+        cv::Canny(grayBlur, edgeMask, threshold, ratio * threshold, kSize);
+        black.copyTo(dstImage);
         srcImage.copyTo(dstImage, edgeMask);
     }
 
@@ -83,11 +94,9 @@ public:
     // Construct a Canny demo display operating on source image s.
     //
     DemoDisplay(const cv::Mat &s):
-        srcImage(s),
-        blackImage(cv::Mat::zeros(srcImage.size(), srcImage.type())),
-        caption("Edge Map"), thresholdBar(0), maxThreshold(100)
+        srcImage(s), caption("Edge Map"), thresholdBar(0), maxThreshold(100)
     {
-        blackImage.copyTo(dstImage);
+        srcImage.copyTo(dstImage);
         makeWindow(caption, dstImage);
         makeTrackbar("Threshold:", &thresholdBar,  maxThreshold);
     }
