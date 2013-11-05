@@ -19,14 +19,11 @@ static cv::Scalar randomScalar(void)
 //
 static void demoBorders(const char *av0, const cv::Mat &src)
 {
-    const int top  = 5 * src.rows / 100;
-    const int left = 5 * src.cols / 100;
-    const int bottom = top;
-    const int right  = left;
+    const int rows = 5 * src.rows / 100;
+    const int cols = 5 * src.cols / 100;
     int kind = cv::BORDER_CONSTANT;
     std::cout << av0 << ": Random border." << std::endl;
     while (true) {
-        const cv::Scalar value = randomScalar();
         switch (cv::waitKey(500)) {
         case 'Q': case 'q':
             std::cout << av0 << ": Quitting now." << std::endl;
@@ -40,8 +37,9 @@ static void demoBorders(const char *av0, const cv::Mat &src)
             std::cout << av0 << ": Replicated border." << std::endl;
             break;
         }
+        const cv::Scalar value = randomScalar();
         cv::Mat dst;
-        cv::copyMakeBorder(src, dst, top, bottom, left, right, kind, value);
+        cv::copyMakeBorder(src, dst, rows, rows, cols, cols, kind, value);
         cv::imshow("copyMakeBorder() Demo", dst);
     }
 }
