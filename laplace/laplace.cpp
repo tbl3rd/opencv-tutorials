@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-// Display dst in the named window.  Lay windows out 2 across.
+// Display image in the named window.  Lay windows out 2 across.
 //
 static void makeWindow(const char *window, const cv::Mat &image)
 {
