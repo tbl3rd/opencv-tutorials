@@ -5,7 +5,6 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-EXECUTABLE := HoughLines_Demo
 EXECUTABLE := houghLines
 IMAGEFILE := ../resources/building.jpg
 

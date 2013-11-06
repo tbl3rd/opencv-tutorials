@@ -23,6 +23,7 @@ static cv::Mat cannyDetect(const cv::Mat &image)
     static const int kernelSize = 3;
     static const bool l2Gradient = false;
     cv::Mat result;
+    image.copyTo(result);
     cv::Canny(image, result, threshold1, threshold1, kernelSize, l2Gradient);
     return result;
 }
@@ -45,10 +46,10 @@ static cv::Mat standardHough(const cv::Mat &cannyImg, const cv::Mat &colorImg)
         const float  theta         = coordinate[1];
         const double cosTheta      = cos(theta);
         const double sinTheta      = sin(theta);
-        const cv::Point pt1(cvRound(rho * cosTheta - diagonal * (sinTheta)),
-                            cvRound(rho * sinTheta + diagonal * (cosTheta)));
-        const cv::Point pt2(cvRound(rho * cosTheta + diagonal * (sinTheta)),
-                            cvRound(rho * sinTheta - diagonal * (cosTheta)));
+        const cv::Point pt1(cvRound(rho * cosTheta - diagonal * sinTheta),
+                            cvRound(rho * sinTheta + diagonal * cosTheta));
+        const cv::Point pt2(cvRound(rho * cosTheta + diagonal * sinTheta),
+                            cvRound(rho * sinTheta - diagonal * cosTheta));
         static const cv::Scalar color(0, 0, 255);
         static const int thickness = 3;
         static const int antiAliasedLine = CV_AA;
@@ -89,11 +90,10 @@ int main(int ac, const char *av[])
         if (image.data) {
             makeWindow("Original", image);
             const cv::Mat cannyImage = cannyDetect(image);
-            cv::Mat colorImage;
-            cv::cvtColor(cannyImage, colorImage, cv::COLOR_GRAY2BGR);
-            const cv::Mat sHough = standardHough(cannyImage, colorImage);
+            makeWindow("Canny Edges", cannyImage);
+            const cv::Mat sHough = standardHough(cannyImage, image);
             makeWindow("Standard Hough", sHough);
-            const cv::Mat pHough = probableHough(cannyImage, colorImage);
+            const cv::Mat pHough = probableHough(cannyImage, image);
             makeWindow("Probablistic Hough", pHough);
             cv::waitKey(0);
             return 0;
