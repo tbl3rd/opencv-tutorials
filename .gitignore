@@ -19,3 +19,4 @@
 /edge-detection/edgeDetect
 /laplace/laplace
 /canny-edge-detector/canny
+/hough-lines/houghLines
