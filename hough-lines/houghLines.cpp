@@ -27,8 +27,6 @@ static cv::Mat cannyDetect(const cv::Mat &image)
     return result;
 }
 
-// This just looks wrong.  Why 1000, for instance? =tbl
-//
 static cv::Mat standardHough(const cv::Mat &cannyImg, const cv::Mat &colorImg)
 {
     cv::Mat result;
@@ -36,22 +34,21 @@ static cv::Mat standardHough(const cv::Mat &cannyImg, const cv::Mat &colorImg)
     std::vector<cv::Vec2f> lines;
     static const double rho = 1;
     static const double theta = CV_PI / 180.0;
-    static const int threshold = 80;
+    static const int threshold = 275;
     static const double srn = 0.0;
     static const double stn = 0.0;
     cv::HoughLines(cannyImg, lines, rho, theta, threshold, srn, stn);
+    const int diagonal = std::hypot(result.rows, result.cols);
     for (int i = 0; i < lines.size(); ++i) {
         const cv::Vec2f coordinate = lines[i];
-        const double rho           = coordinate[0];
-        const double theta         = coordinate[1];
-        const double a             = cos(theta);
-        const double b             = sin(theta);
-        const double x             = a * rho;
-        const double y             = b * rho;
-        const cv::Point pt1(cvRound(x + 1000 * (-b)),
-                            cvRound(y + 1000 * (+a)));
-        const cv::Point pt2(cvRound(x - 1000 * (-b)),
-                            cvRound(y - 1000 * (+a)));
+        const float  rho           = coordinate[0];
+        const float  theta         = coordinate[1];
+        const double cosTheta      = cos(theta);
+        const double sinTheta      = sin(theta);
+        const cv::Point pt1(cvRound(rho * cosTheta - diagonal * (sinTheta)),
+                            cvRound(rho * sinTheta + diagonal * (cosTheta)));
+        const cv::Point pt2(cvRound(rho * cosTheta + diagonal * (sinTheta)),
+                            cvRound(rho * sinTheta - diagonal * (cosTheta)));
         static const cv::Scalar color(0, 0, 255);
         static const int thickness = 3;
         static const int antiAliasedLine = CV_AA;
@@ -68,7 +65,7 @@ static cv::Mat probableHough(const cv::Mat &cannyImg, const cv::Mat &colorImg)
     std::vector<cv::Vec4i> lines;
     static const double rho = 1.0;
     static const double theta = CV_PI / 180.0;
-    static const int threshold = 80;
+    static const int threshold = 200;
     static const double minLength = 50.0;
     static const double maxGap = 5.0;
     cv::HoughLinesP(cannyImg, lines, rho, theta, threshold, minLength, maxGap);
