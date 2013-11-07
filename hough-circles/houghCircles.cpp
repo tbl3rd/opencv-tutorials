@@ -61,7 +61,7 @@ static cv::Mat drawHoughCircles(const cv::Mat &gray, const cv::Mat &image)
     static const double dotPitchRatio = 1.0;
     static const double minDistance = 3.0;
     static const double param1 = 200.0;
-    static const double param2 = 40.0;
+    static const double param2 = 44.0;
     static const int minRadius = 0;
     static const int maxRadius = 0;
     std::vector<cv::Vec3f> circles;
@@ -74,13 +74,13 @@ static cv::Mat drawHoughCircles(const cv::Mat &gray, const cv::Mat &image)
     return result;
 }
 
-// Return a grayscale copy of image blurred with a 9x9 kernel.
+// Return a grayscale copy of image blurred with a 7x7 kernel.
 //
 static cv::Mat blurGray(const cv::Mat &image)
 {
     cv::Mat gray, result;
     cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-    static const cv::Size kernelSize(9, 9);
+    static const cv::Size kernelSize(7, 7);
     static const double sigmaX = 2.0;
     static const double sigmaY = 2.0;
     cv::GaussianBlur(gray, result, kernelSize, sigmaX, sigmaY);

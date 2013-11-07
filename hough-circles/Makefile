@@ -7,6 +7,7 @@ CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := houghCircles
 IMAGEFILE := ../resources/board.jpg
+IMAGEFILE := ../resources/prototype.jpg
 
 main: $(EXECUTABLE)
 
