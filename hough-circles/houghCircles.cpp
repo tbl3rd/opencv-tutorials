@@ -16,18 +16,6 @@ static void makeWindow(const char *window, const cv::Mat &image)
     ++moveCount;
 }
 
-static cv::Mat cannyDetect(const cv::Mat &image)
-{
-    static const double threshold1 =  50;
-    static const double threshold2 = 200;
-    static const int kernelSize = 3;
-    static const bool l2Gradient = false;
-    cv::Mat result;
-    image.copyTo(result);
-    cv::Canny(image, result, threshold1, threshold1, kernelSize, l2Gradient);
-    return result;
-}
-
 // Draw circle (x, y, r) on image with a green center at (x, y) and a red
 // perimeter at radius r around the center.
 //
