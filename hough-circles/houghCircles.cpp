@@ -33,6 +33,7 @@ static cv::Mat cannyDetect(const cv::Mat &image)
 //
 static void drawCircle(cv::Mat &image, const cv::Vec3f &circle)
 {
+    std::cout << "circle == " << circle << std::endl;
     const float centerX = circle[0];
     const float centerY = circle[1];
     const float fRadius = circle[2];
@@ -57,14 +58,14 @@ static void drawCircle(cv::Mat &image, const cv::Vec3f &circle)
 static cv::Mat drawHoughCircles(const cv::Mat &gray, const cv::Mat &image)
 {
     static const int method = CV_HOUGH_GRADIENT;
-    static const double dp = 1.0;
-    static const double minDistance = gray.rows / 8.0;
+    static const double dotPitchRatio = 1.0;
+    static const double minDistance = 3.0;
     static const double param1 = 200.0;
-    static const double param2 = 100.0;
+    static const double param2 = 40.0;
     static const int minRadius = 0;
     static const int maxRadius = 0;
     std::vector<cv::Vec3f> circles;
-    cv::HoughCircles(gray, circles, method, 1, minDistance,
+    cv::HoughCircles(gray, circles, method, dotPitchRatio, minDistance,
                      param1, param2, minRadius, maxRadius);
     std::cout << "circles.size() == " << circles.size() << std::endl;
     cv::Mat result;
