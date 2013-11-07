@@ -3,9 +3,7 @@
 #include <iostream>
 
 
-cv::Mat mapX, mapY;
-
-void updateMaps(const cv::Mat &image)
+void updateMaps(const cv::Mat &image, cv::Mat &mapX, cv::Mat &mapY)
 {
     static int index = 0;
     index %= 5;
@@ -52,26 +50,30 @@ void updateMaps(const cv::Mat &image)
     ++index;
 }
 
-int main(int ac, const char *av[])
+static bool showNextRemap(const cv::Mat &src)
 {
     static const int interpolation = cv::INTER_LINEAR;
     static const int borderKind = cv::BORDER_CONSTANT;
     static const cv::Scalar borderValue(0, 0, 0);
     static const int waitMilliseconds = 1000;
+    cv::Mat mapX(src.size(), CV_32FC1);
+    cv::Mat mapY(src.size(), CV_32FC1);
+    updateMaps(src, mapX, mapY);
+    cv::Mat dst;
+    cv::remap(src, dst, mapX, mapY, interpolation, borderKind, borderValue);
+    cv::imshow("Remap demo", dst);
+    const int c = cv::waitKey(waitMilliseconds);
+    return !('Q' == c || 'q' == c);
+}
+
+int main(int ac, const char *av[])
+{
     if (ac == 2) {
         const cv::Mat src = cv::imread(av[1]);
         if (src.data) {
             cv::Mat dst(src.size(), src.type());
-            mapX.create(src.size(), CV_32FC1);
-            mapY.create(src.size(), CV_32FC1);
-            while (true) {
-                updateMaps(src);
-                cv::remap(src, dst, mapX, mapY, interpolation,
-                          borderKind, borderValue);
-                cv::imshow("Remap demo", dst);
-                const int c = cv::waitKey(waitMilliseconds);
-                if('Q' == c || 'q' == c) break;
-            }
+            std::cout << av[0] << ": Press 'q' to quit." << std::endl;
+            while (showNextRemap(src)) continue;
             return 0;
         }
     }
