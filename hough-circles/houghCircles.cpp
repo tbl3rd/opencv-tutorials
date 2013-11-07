@@ -96,7 +96,7 @@ int main(int ac, const char *av[])
               << std::endl
               << "Where: <image-file> is the name of an image file."
               << std::endl << std::endl
-              << "Example: " << av[0] << " ../resources/bourd.jpg"
+              << "Example: " << av[0] << " ../resources/prototype.jpg"
               << std::endl << std::endl;
     return 1;
 }
