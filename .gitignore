@@ -20,3 +20,4 @@
 /laplace/laplace
 /canny-edge-detector/canny
 /hough-lines/houghLines
+/hough-circles/houghCircles
