@@ -183,20 +183,21 @@ static void showMap(const ImageMap &map, const cv::Mat &src)
 }
 
 // Show a remap of src in window by cycling through the mapCount image maps
-// in maps once per second until the user keys 'q'.  Return false to quit.
-// Otherwise, return true to continue cycling.
+// in maps once per second until the user keys 'q'.
 //
-static bool showRemaps(const char *window, const cv::Mat &src,
+static void showRemaps(const char *window, const cv::Mat &src,
                        int mapCount, const ImageMap *maps[])
 {
     static const int oneSecondInMilliseconds = 1000;
-    static int index = 0;
-    const ImageMap &map = *maps[index % mapCount];
-    const cv::Mat dst = map(src);
-    ++index;
-    cv::imshow(window, dst);
-    const int c = cv::waitKey(oneSecondInMilliseconds);
-    return !('Q' == c || 'q' == c);
+    int index = 0;
+    while (true) {
+        const ImageMap &map = *maps[index %= mapCount];
+        const cv::Mat dst = map(src);
+        cv::imshow(window, dst);
+        const int c = cv::waitKey(oneSecondInMilliseconds);
+        if ('Q' == c || 'q' == c) break;
+        ++index;
+    }
 }
 
 int main(int ac, const char *av[])
@@ -215,7 +216,7 @@ int main(int ac, const char *av[])
             const ImageMap *map[] = { &id, &rh, &rv, &rb, &qs };
             const int mapCount = sizeof map / sizeof map[0];
             for (int i = 0; i < mapCount; ++i) showMap(*map[i], src);
-            while (showRemaps("Remap demo", src, mapCount, map)) continue;
+            showRemaps("Remap demo", src, mapCount, map);
             return 0;
         }
     }
