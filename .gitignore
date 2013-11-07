@@ -21,3 +21,4 @@
 /canny-edge-detector/canny
 /hough-lines/houghLines
 /hough-circles/houghCircles
+/remap-image/remap
