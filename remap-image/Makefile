@@ -6,8 +6,8 @@ CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := remap
-IMAGEFILE := ../resources/board.jpg
 IMAGEFILE := ../resources/prototype.jpg
+IMAGEFILE := ../resources/lena.jpg
 
 main: $(EXECUTABLE)
 
