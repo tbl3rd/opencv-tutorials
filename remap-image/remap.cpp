@@ -60,6 +60,8 @@ protected:
     static void init(ImageMap &m)
     {
         assert(m.itsX.size() == m.itsY.size());
+        assert(m.itsX.isContinuous());
+        assert(m.itsY.isContinuous());
         const int rows = m.itsX.rows;
         const int cols = m.itsX.cols;
         for (int i = 0; i < rows; ++i) {
@@ -99,8 +101,8 @@ public:
 class IdentityMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX(i, j) = j;
-        itsY(i, j) = i;
+        itsX[i][j] = j;
+        itsY[i][j] = i;
     }
 public:
     IdentityMap(const cv::Size &size):
@@ -115,8 +117,8 @@ public:
 class ReflectHorizontalMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX(i, j) = j;
-        itsY(i, j) = itsY.rows - i;
+        itsX[i][j] = j;
+        itsY[i][j] = itsY.rows - i;
     }
 public:
     ReflectHorizontalMap(const cv::Size &size):
@@ -131,8 +133,8 @@ public:
 class ReflectVerticalMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX(i, j) = itsX.cols - j;
-        itsY(i, j) = i;
+        itsX[i][j] = itsX.cols - j;
+        itsY[i][j] = i;
     }
 public:
     ReflectVerticalMap(const cv::Size &size):
@@ -148,8 +150,8 @@ public:
 class ReflectHorizontalVerticalMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX(i, j) = itsX.cols - j;
-        itsY(i, j) = itsY.rows - i;
+        itsX[i][j] = itsX.cols - j;
+        itsY[i][j] = itsY.rows - i;
     }
 public:
     ReflectHorizontalVerticalMap(const cv::Size &size):
@@ -177,8 +179,8 @@ class HalfScaleMap: public ImageMap {
             x = 0.5 + 2 * (j - minCols);
             y = 0.5 + 2 * (i - minRows);
         }
-        itsX(i, j) = x;
-        itsY(i, j) = y;
+        itsX[i][j] = x;
+        itsY[i][j] = y;
     }
 public:
     HalfScaleMap(const cv::Size &size):
