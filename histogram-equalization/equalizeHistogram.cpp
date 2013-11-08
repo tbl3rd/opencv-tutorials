@@ -35,7 +35,7 @@ int main(int ac, const char *av[])
             std::cout << av[0] << ": Press some key to quit." << std::endl;
             cv::Mat gray, equalized;
             makeWindow("Source Image", image);
-            cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY );
+            cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
             makeWindow("Grayscale Image", gray);
             cv::equalizeHist(gray, equalized);
             makeWindow("Equalized Image", equalized);

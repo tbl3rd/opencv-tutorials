@@ -24,3 +24,4 @@
 /remap-image/remap
 /affine-tranformations/affine
 /histogram-equalization/equalizeHistogram
+/histogram-calculation/calculateHistogram
