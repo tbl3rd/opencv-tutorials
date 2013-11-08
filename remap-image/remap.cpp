@@ -8,8 +8,7 @@
 //
 // The fudge works around how MacOSX lays out window decorations.
 //
-static void makeWindow(const char *window, const cv::Mat &image,
-                       int reset = 0)
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
     static int across = 1;
     static int moveCount = 0;
@@ -35,7 +34,6 @@ static void makeWindow(const char *window, const cv::Mat &image,
 static bool waitSeconds(int seconds)
 {
     static const int oneSecondInMilliseconds = 1000;
-    const int milliseconds = seconds * oneSecondInMilliseconds;
     const int c = cv::waitKey(seconds * oneSecondInMilliseconds);
     return 'Q' == c || 'q' == c;
 }
@@ -56,8 +54,8 @@ class ImageMap {
 
 protected:
 
-    cv::Mat itsX;
-    cv::Mat itsY;
+    cv::Mat_<float> itsX;
+    cv::Mat_<float> itsY;
 
     static void init(ImageMap &m)
     {
@@ -101,8 +99,8 @@ public:
 class IdentityMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX.at<float>(i, j) = j;
-        itsY.at<float>(i, j) = i;
+        itsX(i, j) = j;
+        itsY(i, j) = i;
     }
 public:
     IdentityMap(const cv::Size &size):
@@ -117,8 +115,8 @@ public:
 class ReflectHorizontalMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX.at<float>(i, j) = j;
-        itsY.at<float>(i, j) = itsY.rows - i;
+        itsX(i, j) = j;
+        itsY(i, j) = itsY.rows - i;
     }
 public:
     ReflectHorizontalMap(const cv::Size &size):
@@ -133,8 +131,8 @@ public:
 class ReflectVerticalMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX.at<float>(i, j) = itsX.cols - j;
-        itsY.at<float>(i, j) = i;
+        itsX(i, j) = itsX.cols - j;
+        itsY(i, j) = i;
     }
 public:
     ReflectVerticalMap(const cv::Size &size):
@@ -150,8 +148,8 @@ public:
 class ReflectHorizontalVerticalMap: public ImageMap {
     virtual void computeXandYmaps(int i, int j)
     {
-        itsX.at<float>(i, j) = itsX.cols - j;
-        itsY.at<float>(i, j) = itsY.rows - i;
+        itsX(i, j) = itsX.cols - j;
+        itsY(i, j) = itsY.rows - i;
     }
 public:
     ReflectHorizontalVerticalMap(const cv::Size &size):
@@ -179,8 +177,8 @@ class HalfScaleMap: public ImageMap {
             x = 0.5 + 2 * (j - minCols);
             y = 0.5 + 2 * (i - minRows);
         }
-        itsX.at<float>(i, j) = x;
-        itsY.at<float>(i, j) = y;
+        itsX(i, j) = x;
+        itsY(i, j) = y;
     }
 public:
     HalfScaleMap(const cv::Size &size):
