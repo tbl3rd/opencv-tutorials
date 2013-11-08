@@ -3,6 +3,31 @@
 #include <iostream>
 
 
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
+//
+// The fudge works around how MacOSX lays out window decorations.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
+{
+    static int across = 1;
+    static int moveCount = 0;
+    if (reset) {
+        across = reset;
+        moveCount = 0;
+    }
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
+    const int overCount = moveCount % across;
+    const int downCount = moveCount / across;
+    const int moveX = overCount * image.cols;
+    const int moveY = downCount * image.rows;
+    const int fudge = downCount == 0 ? 0 : (1 + downCount);
+    cv::moveWindow(window, moveX, moveY + 23 * fudge);
+    cv::imshow(window, image);
+    ++moveCount;
+}
+
+
 static void showTransformations(const cv::Mat &src)
 {
     cv::Point2f srcTri[3];
@@ -44,17 +69,9 @@ static void showTransformations(const cv::Mat &src)
     cv::warpAffine(warp_dst, warp_rotate_dst, rot_mat, warp_dst.size());
 
     /// Show what you got
-    cv::namedWindow("Source image", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Source image", src);
-
-    cv::namedWindow("Warp", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Warp", warp_dst);
-
-    cv::namedWindow("Warp+Rotate", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Warp+Rotate", warp_rotate_dst);
-
-    /// Wait until user exits the program
-    cv::waitKey(0);
+    makeWindow("Source image", src);
+    makeWindow("Warp", warp_dst);
+    makeWindow("Warp+Rotate", warp_rotate_dst);
 }
 
 
@@ -63,7 +80,9 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat src = cv::imread(av[1]);
         if (src.data) {
+            std::cout << av[0] << ": Press some key to quit." << std::endl;
             showTransformations(src);
+            cv::waitKey(0);
             return 0;
         }
     }
