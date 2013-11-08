@@ -39,9 +39,9 @@ static void showHistogram(const cv::Mat &image)
     static const bool    uniform        = true;
     static const bool    accumulate     = false;
     enum Color { BLUE, GREEN, RED, COLORCOUNT };
-    cv::Mat          plane[COLORCOUNT];
-    cv::Mat      histogram[COLORCOUNT];
-    const cv::Scalar color[COLORCOUNT] = {
+    cv::Mat             plane[COLORCOUNT];
+    cv::Mat_<float> histogram[COLORCOUNT];
+    const cv::Scalar    color[COLORCOUNT] = {
         cv::Scalar(255,   0,   0),      // BLUE
         cv::Scalar(  0, 255,   0),      // GREEN
         cv::Scalar(  0,   0, 255)       // RED
@@ -58,23 +58,27 @@ static void showHistogram(const cv::Mat &image)
     const int binWidth = cvRound(fHistWidth / histSizes[0]);
     cv::Mat histImage = cv::Mat_<cv::Vec3b>::zeros(histHeight, histWidth);
     for (int c = 0; c < COLORCOUNT; ++c) {
-        cv::normalize(histogram[c], histogram[c], 0,
-                      histImage.rows, cv::NORM_MINMAX, -1, noArray);
+        static const double alpha = 0;
+        static const int normKind = cv::NORM_MINMAX;
+        static const cv::Mat mask(noArray);
+        static const int dtype = -1;
+        const cv::Mat_<float> &h = histogram[c];
+        const double beta = histImage.rows;
+        cv::normalize(h, h, alpha, beta, normKind, dtype, mask);
     }
     for (int c = 0; c < COLORCOUNT; ++c) {
+        const cv::Mat_<float> &h = histogram[c];
+        cv::Point p0(0, histHeight - cvRound(h(0)));
         for (int i = 1; i < histSizes[0]; ++i) {
-            const int x0 = binWidth * (i - 1);
-            const int x1 = binWidth * (i - 0);
-            const int h0 = cvRound(histogram[c].at<float>(i - 1));
-            const int h1 = cvRound(histogram[c].at<float>(i - 0));
-            const int y0 = histHeight - h0;
-            const int y1 = histHeight - h1;
-            const cv::Point p0(x0, y0);
-            const cv::Point p1(x1, y1);
-            cv::line(histImage, p0, p1, color[c], 2, 8, 0 );
+            static const int thickness = 2;
+            static const int lineType = 8;
+            static const int shift = 0;
+            const cv::Point p1(i * binWidth, histHeight - cvRound(h(i)));
+            cv::line(histImage, p0, p1, color[c], thickness, lineType, shift);
+            p0 = p1;
         }
     }
-    makeWindow("Calculate Histograms Demo", histImage);
+    makeWindow("Color Histogram", histImage);
 }
 
 int main(int ac, const char *av[])
