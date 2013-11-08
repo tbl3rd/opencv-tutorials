@@ -4,15 +4,19 @@
 
 
 // Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
 //
 // The fudge works around how MacOSX lays out window decorations.
 //
 static void makeWindow(const char *window, const cv::Mat &image,
-                       bool reset = false)
+                       int reset = 0)
 {
-    static const int across = 2;
+    static int across = 1;
     static int moveCount = 0;
-    if (reset) moveCount = 0;
+    if (reset) {
+        across = reset;
+        moveCount = 0;
+    }
     cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
     const int overCount = moveCount % across;
     const int downCount = moveCount / across;
@@ -21,6 +25,19 @@ static void makeWindow(const char *window, const cv::Mat &image,
     const int fudge = downCount == 0 ? 0 : (1 + downCount);
     cv::moveWindow(window, moveX, moveY + 23 * fudge);
     ++moveCount;
+}
+
+
+// Wait seconds or until some key is pressed.
+// Return true if that key was 'q'.
+// Otherwise return false.
+//
+static bool waitSeconds(int seconds)
+{
+    static const int oneSecondInMilliseconds = 1000;
+    const int milliseconds = seconds * oneSecondInMilliseconds;
+    const int c = cv::waitKey(seconds * oneSecondInMilliseconds);
+    return 'Q' == c || 'q' == c;
 }
 
 
@@ -173,31 +190,52 @@ public:
     }
 };
 
-// Show the result of applying map to src.
-//
-static void showMap(const ImageMap &map, const cv::Mat &src)
-{
-    const cv::Mat dst = map(src);
-    makeWindow(map.name(), dst);
-    cv::imshow(map.name(), dst);
-}
 
 // Show a remap of src in window by cycling through the mapCount image maps
-// in maps once per second until the user keys 'q'.
+// in maps once per second until the user keys 'q'.  Return false.
 //
-static void showRemaps(const char *window, const cv::Mat &src,
+static bool showRemaps(const char *window, const cv::Mat &src,
                        int mapCount, const ImageMap *maps[])
 {
-    static const int oneSecondInMilliseconds = 1000;
+    makeWindow(window, src, 2);
+    for (int i = 0; i < mapCount; ++i) {
+        const ImageMap &map = *maps[i];
+        const cv::Mat dst = map(src);
+        makeWindow(map.name(), dst);
+        cv::imshow(map.name(), dst);
+    }
     int index = 0;
     while (true) {
         const ImageMap &map = *maps[index %= mapCount];
         const cv::Mat dst = map(src);
         cv::imshow(window, dst);
-        const int c = cv::waitKey(oneSecondInMilliseconds);
-        if ('Q' == c || 'q' == c) break;
+        if (waitSeconds(1)) break;
         ++index;
     }
+    return false;
+}
+
+// Show various map compositions of src in window until the user keys 'q'.
+//
+static bool showMapRemaps(const char *window, const cv::Mat &src,
+                          int mapCount, const ImageMap *maps[])
+{
+    for (int i = 0; i < mapCount; ++i) {
+        cv::destroyAllWindows();
+        const ImageMap &outer = *maps[i];
+        const cv::Mat outerDst = outer(src);
+        makeWindow(outer.name(), outerDst, 2);
+        cv::imshow(outer.name(), outerDst);
+        for (int j = 0; j < mapCount; ++j) {
+            const ImageMap &inner = *maps[j];
+            const char *const name = i == j ? window : inner.name();
+            const cv::Mat dst = outer(inner(src));
+            makeWindow(name, dst);
+            cv::imshow(name, dst);
+        }
+        if (waitSeconds(10)) return true;
+    }
+    return false;
 }
 
 int main(int ac, const char *av[])
@@ -205,8 +243,8 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat src = cv::imread(av[1]);
         if (src.data) {
-            std::cout << av[0] << ": Press 'q' to quit." << std::endl;
-            makeWindow("Remap demo", src, true);
+            std::cout << av[0] << ": Press 'q' to quit or" << std::endl
+                      << av[0] << ": another key to advance." << std::endl;
             const cv::Size size = src.size();
             const IdentityMap                  id(size);
             const ReflectHorizontalMap         rh(size);
@@ -215,8 +253,10 @@ int main(int ac, const char *av[])
             const HalfScaleMap                 qs(size);
             const ImageMap *map[] = { &id, &rh, &rv, &rb, &qs };
             const int mapCount = sizeof map / sizeof map[0];
-            for (int i = 0; i < mapCount; ++i) showMap(*map[i], src);
-            showRemaps("Remap demo", src, mapCount, map);
+            const bool quit
+                =  showRemaps("Remap demo", src, mapCount, map)
+                || showMapRemaps("DOUBLE", src, mapCount, map);
+            if (quit) std::cout << av[0] << ": quitting now." << std::endl;
             return 0;
         }
     }
