@@ -16,64 +16,49 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
         across = reset;
         moveCount = 0;
     }
-    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
     const int overCount = moveCount % across;
     const int downCount = moveCount / across;
     const int moveX = overCount * image.cols;
     const int moveY = downCount * image.rows;
     const int fudge = downCount == 0 ? 0 : (1 + downCount);
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
     cv::moveWindow(window, moveX, moveY + 23 * fudge);
     cv::imshow(window, image);
     ++moveCount;
 }
 
-
+// Return a copy of src warped by mapping srcTri to dstTri.
+//
 static cv::Mat warpImage(const cv::Mat &src)
 {
-    cv::Mat result = cv::Mat::zeros(src.size(), src.type());
-    const cv::Point2f srcTri[3] = {
+    const cv::Point2f srcTri[] = {
         cv::Point2f(0,            0           ),
         cv::Point2f(src.cols - 1, 0           ),
         cv::Point2f(0,            src.rows - 1)
     };
-    const cv::Point2f dstTri[3] = {
+    const cv::Point2f dstTri[] = {
         cv::Point2f(src.cols * 0.00, src.rows * 0.33),
         cv::Point2f(src.cols * 0.85, src.rows * 0.25),
         cv::Point2f(src.cols * 0.15, src.rows * 0.70)
     };
     const cv::Mat warpMat = cv::getAffineTransform(srcTri, dstTri);
+    cv::Mat result;
     cv::warpAffine(src, result, warpMat, result.size());
     return result;
 }
 
-
-static void showTransformations(const cv::Mat &src)
+// Return a copy of src scaled and rotated by angle about center.
+//
+static cv::Mat rotateImage(const cv::Mat &src)
 {
-    cv::Mat rot_mat(2, 3, CV_32FC1);
-    cv::Mat warp_rotate_dst;
-
-    /// Set the dst image the same type and size as src
-    const cv::Mat warpDst = warpImage(src);
-
-    /** Rotating the image after Warp */
-
-    /// Compute a rotation matrix with respect to the center of the image
-    cv::Point center(warpDst.cols / 2, warpDst.rows / 2);
-    double angle = -50.0;
-    double scale = 0.6;
-
-    /// Get the rotation matrix with the specifications above
-    rot_mat = cv::getRotationMatrix2D(center, angle, scale);
-
-    /// Rotate the warped image
-    cv::warpAffine(warpDst, warp_rotate_dst, rot_mat, warpDst.size());
-
-    /// Show what you got
-    makeWindow("Source image", src);
-    makeWindow("Warp", warpDst);
-    makeWindow("Warp+Rotate", warp_rotate_dst);
+    static const double angle = -50.0;
+    static const double scale = 0.6;
+    const cv::Point center(src.cols / 2, src.rows / 2);
+    const cv::Mat rotateMat = cv::getRotationMatrix2D(center, angle, scale);
+    cv::Mat result;
+    cv::warpAffine(src, result, rotateMat, src.size());
+    return result;
 }
-
 
 int main(int ac, const char *av[])
 {
@@ -81,7 +66,11 @@ int main(int ac, const char *av[])
         const cv::Mat src = cv::imread(av[1]);
         if (src.data) {
             std::cout << av[0] << ": Press some key to quit." << std::endl;
-            showTransformations(src);
+            const cv::Mat warpDst = warpImage(src);
+            const cv::Mat warpRotateDst = rotateImage(warpDst);
+            makeWindow("Source image", src);
+            makeWindow("Warp", warpDst);
+            makeWindow("Warp+Rotate", warpRotateDst);
             cv::waitKey(0);
             return 0;
         }
