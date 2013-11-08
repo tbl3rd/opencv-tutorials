@@ -68,7 +68,7 @@ int main(int ac, const char *av[])
             std::cout << av[0] << ": Press some key to quit." << std::endl;
             const cv::Mat warpDst = warpImage(src);
             const cv::Mat warpRotateDst = rotateImage(warpDst);
-            makeWindow("Source image", src);
+            makeWindow("Source", src);
             makeWindow("Warp", warpDst);
             makeWindow("Warp+Rotate", warpRotateDst);
             cv::waitKey(0);
