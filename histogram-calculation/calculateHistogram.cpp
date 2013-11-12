@@ -27,58 +27,54 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
     ++moveCount;
 }
 
-static void showHistogram(const cv::Mat &image)
+static cv::Mat computeHistogram(const cv::Mat &image)
 {
-    static const cv::Mat noArray;
-    static const int     imageCount     = 1;
-    static const int     dimensionCount = 1;
-    static const int     histSize       = 256;
-    static const int     histSizes[]    = { histSize };
-    static const float   histRange[]    = { 0, histSize };
-    static const float  *histRanges[]   = { histRange };
-    static const bool    uniform        = true;
-    static const bool    accumulate     = false;
-    enum Color { BLUE, GREEN, RED, COLORCOUNT };
-    cv::Mat             plane[COLORCOUNT];
-    cv::Mat_<float> histogram[COLORCOUNT];
-    const cv::Scalar    color[COLORCOUNT] = {
+    enum Color { BLUE, GREEN, RED };
+    static const cv::Scalar color[] = {
         cv::Scalar(255,   0,   0),      // BLUE
         cv::Scalar(  0, 255,   0),      // GREEN
         cv::Scalar(  0,   0, 255)       // RED
     };
+    static const int colorCount = sizeof color / sizeof color[0];
+    static const int histSize   = 256;
+    cv::Mat             plane[colorCount];
+    cv::Mat_<float> histogram[colorCount];
     cv::split(image, plane);
-    for (int c = 0; c < COLORCOUNT; ++c) {
-        cv::calcHist(&plane[c], imageCount, 0, noArray, histogram[c],
+    for (int c = 0; c < colorCount; ++c) {
+        static const int    imageCount     = 1;
+        static const int    dimensionCount = 1;
+        static const int    histSizes[]    = { histSize };
+        static const float  histRange[]    = { 0, histSize };
+        static const float *histRanges[]   = { histRange };
+        static const bool   uniform        = true;
+        static const bool   accumulate     = false;
+        cv::calcHist(&plane[c], imageCount, 0, cv::noArray(), histogram[c],
                      dimensionCount, histSizes, histRanges,
                      uniform, accumulate);
     }
-    static const int histWidth = 512;
-    static const int histHeight = 400;
-    static const double fHistWidth = histWidth;
-    const int binWidth = cvRound(fHistWidth / histSizes[0]);
-    cv::Mat histImage = cv::Mat_<cv::Vec3b>::zeros(histHeight, histWidth);
-    for (int c = 0; c < COLORCOUNT; ++c) {
+    const int binWidth = cvRound(1.0 * image.cols / histSize);
+    cv::Mat result = cv::Mat_<cv::Vec3b>::zeros(image.rows, image.cols);
+    for (int c = 0; c < colorCount; ++c) {
         static const double alpha = 0;
         static const int normKind = cv::NORM_MINMAX;
-        static const cv::Mat mask(noArray);
         static const int dtype = -1;
         const cv::Mat_<float> &h = histogram[c];
-        const double beta = histImage.rows;
-        cv::normalize(h, h, alpha, beta, normKind, dtype, mask);
+        const double beta = result.rows;
+        cv::normalize(h, h, alpha, beta, normKind, dtype, cv::noArray());
     }
-    for (int c = 0; c < COLORCOUNT; ++c) {
+    for (int c = 0; c < colorCount; ++c) {
         const cv::Mat_<float> &h = histogram[c];
-        cv::Point p0(0, histHeight - cvRound(h(0)));
-        for (int i = 1; i < histSizes[0]; ++i) {
+        cv::Point p0(0, result.rows - cvRound(h(0)));
+        for (int i = 1; i < histSize; ++i) {
             static const int thickness = 2;
             static const int lineType = 8;
             static const int shift = 0;
-            const cv::Point p1(i * binWidth, histHeight - cvRound(h(i)));
-            cv::line(histImage, p0, p1, color[c], thickness, lineType, shift);
+            const cv::Point p1(i * binWidth, result.rows - cvRound(h(i)));
+            cv::line(result, p0, p1, color[c], thickness, lineType, shift);
             p0 = p1;
         }
     }
-    makeWindow("Color Histogram", histImage);
+    return result;
 }
 
 int main(int ac, const char *av[])
@@ -87,9 +83,9 @@ int main(int ac, const char *av[])
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
             std::cout << av[0] << ": Press some key to quit." << std::endl;
-            cv::Mat gray, equalized;
             makeWindow("Source Image", image);
-            showHistogram(image);
+            const cv::Mat histogram = computeHistogram(image);
+            makeWindow("Color Histogram", histogram);
             cv::waitKey(0);
             return 0;
         }
