@@ -27,32 +27,27 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
     ++moveCount;
 }
 
-// Return a histogram with binCount bins for the color values in plane.
+// Return a normalized histogram across binCount bins for plane.
 //
-static cv::Mat_<float> calculatePlane(const cv::Mat &plane, int binCount)
+static cv::Mat_<float> normalizedHistogram(const cv::Mat &plane, int binCount)
 {
-    static const int    imageCount     = 1;
-    static const int    dimensionCount = 1;
-    static const int    binCounts[]    = { binCount };
-    static const float  histRange[]    = { 0, binCount };
-    static const float *histRanges[]   = { histRange };
-    static const bool   uniform        = true;
-    static const bool   accumulate     = false;
-    cv::Mat_<float>     result;
-    cv::calcHist(&plane, imageCount, 0, cv::noArray(), result,
+    static const cv::Mat noMask;
+    static const int     imageCount     = 1;
+    static const int     dimensionCount = 1;
+    static const int     binCounts[]    = { binCount };
+    static const float   histRange[]    = { 0, binCount };
+    static const float  *histRanges[]   = { histRange };
+    static const bool    uniform        = true;
+    static const bool    accumulate     = false;
+    cv::Mat_<float>      histogram, result;
+    cv::calcHist(&plane, imageCount, 0, noMask, histogram,
                  dimensionCount, binCounts, histRanges, uniform, accumulate);
-    return result;
-}
-
-// Normalize the histogram in h for display in rows.
-//
-static void normalizeHistogram(cv::Mat &h, int rows)
-{
     static const double alpha = 0;
     static const int normKind = cv::NORM_MINMAX;
     static const int dtype = -1;
-    const double beta = rows;
-    cv::normalize(h, h, alpha, beta, normKind, dtype, cv::noArray());
+    const double beta = plane.rows;
+    cv::normalize(histogram, result, alpha, beta, normKind, dtype, noMask);
+    return result;
 }
 
 // Draw the normalized histogram in color on image.
@@ -77,26 +72,21 @@ static void drawHistogram(cv::Mat &image,
 //
 static cv::Mat computeHistogram(const cv::Mat &image)
 {
+    static const int max = std::numeric_limits<unsigned char>::max();
     enum { BLUE, GREEN, RED, COLORCOUNT };
-    static const char *colorNames[] = {
-        [BLUE]  = "blue",
-        [GREEN] = "green",
-        [RED]   = "red"
+    static const struct { cv::Scalar value; const char *name; } color[] = {
+        [BLUE]  = { cv::Scalar(max,   0,   0), "blue"  },
+        [GREEN] = { cv::Scalar(  0, max,   0), "green" },
+        [RED]   = { cv::Scalar(  0,   0, max), "red"   }
     };
-    static const cv::Scalar color[] = {
-        [BLUE]  = cv::Scalar(255,   0,   0),
-        [GREEN] = cv::Scalar(  0, 255,   0),
-        [RED]   = cv::Scalar(  0,   0, 255)
-    };
-    static const int binCount   = 256;
+    static const int binCount = 1 + max; // a bin for each of [0..max]
     cv::Mat result = cv::Mat_<cv::Vec3b>::zeros(image.rows, image.cols);
     cv::Mat plane[COLORCOUNT];
     cv::split(image, plane);
     for (int c = 0; c < COLORCOUNT; ++c) { // for each color ...
-        makeWindow(colorNames[c], plane[c]);
-        cv::Mat_<float> hist = calculatePlane(plane[c], binCount);
-        normalizeHistogram(hist, image.rows);
-        drawHistogram(result, hist, color[c]);
+        makeWindow(color[c].name, plane[c]);
+        const cv::Mat_<float> hist = normalizedHistogram(plane[c], binCount);
+        drawHistogram(result, hist, color[c].value);
     }
     return result;
 }
