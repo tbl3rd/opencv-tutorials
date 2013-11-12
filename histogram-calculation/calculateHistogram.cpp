@@ -78,23 +78,19 @@ static void drawHistogram(cv::Mat &image,
 static cv::Mat computeHistogram(const cv::Mat &image)
 {
     static const cv::Scalar color[] = {
-        cv::Scalar(255,   0,   0),      // BLUE
-        cv::Scalar(  0, 255,   0),      // GREEN
-        cv::Scalar(  0,   0, 255)       // RED
+        cv::Scalar(255,   0,   0),      // blue
+        cv::Scalar(  0, 255,   0),      // green
+        cv::Scalar(  0,   0, 255)       // red
     };
     static const int colorCount = sizeof color / sizeof color[0];
     static const int binCount   = 256;
-    cv::Mat plane[colorCount];
-    cv::split(image, plane);
-    cv::Mat_<float> hist[colorCount];
-    for (int c = 0; c < colorCount; ++c) {
-        hist[c] = calculatePlane(plane[c], binCount);
-    }
-    for (int c = 0; c < colorCount; ++c) {
-        normalizeHistogram(hist[c], image.rows);
-    }
     cv::Mat result = cv::Mat_<cv::Vec3b>::zeros(image.rows, image.cols);
-    for (int c = 0; c < colorCount; ++c) {
+    cv::Mat plane[colorCount];
+    cv::Mat_<float> hist[colorCount];
+    cv::split(image, plane);
+    for (int c = 0; c < colorCount; ++c) { // for each color ...
+        hist[c] = calculatePlane(plane[c], binCount);
+        normalizeHistogram(hist[c], image.rows);
         drawHistogram(result, hist[c], color[c]);
     }
     return result;
