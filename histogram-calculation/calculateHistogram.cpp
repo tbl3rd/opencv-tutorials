@@ -27,20 +27,20 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
     ++moveCount;
 }
 
-// Return a histogram with histSize bins for the color values in plane.
+// Return a histogram with binCount bins for the color values in plane.
 //
-static cv::Mat_<float> calculatePlane(const cv::Mat &plane, int histSize)
+static cv::Mat_<float> calculatePlane(const cv::Mat &plane, int binCount)
 {
     static const int    imageCount     = 1;
     static const int    dimensionCount = 1;
-    static const int    histSizes[]    = { histSize };
-    static const float  histRange[]    = { 0, histSize };
+    static const int    binCounts[]    = { binCount };
+    static const float  histRange[]    = { 0, binCount };
     static const float *histRanges[]   = { histRange };
     static const bool   uniform        = true;
     static const bool   accumulate     = false;
     cv::Mat_<float>     result;
     cv::calcHist(&plane, imageCount, 0, cv::noArray(), result,
-                 dimensionCount, histSizes, histRanges, uniform, accumulate);
+                 dimensionCount, binCounts, histRanges, uniform, accumulate);
     return result;
 }
 
@@ -55,13 +55,15 @@ static void normalizeHistogram(cv::Mat &h, int rows)
     cv::normalize(h, h, alpha, beta, normKind, dtype, cv::noArray());
 }
 
-// Draw normalized histogram in color on image.
+// Draw the normalized histogram in color on image.
 //
-static void drawHistogram(const cv::Mat_<double> &histogram, int binWidth,
-                          const cv::Scalar &color, cv::Mat &image)
+static void drawHistogram(cv::Mat &image,
+                          const cv::Mat_<float> &histogram,
+                          const cv::Scalar &color)
 {
+    const int binWidth = cvRound(1.0 * image.cols / histogram.rows);
     cv::Point p0(0, image.rows - cvRound(histogram(0)));
-    for (int i = 1; i < histogram.cols; ++i) {
+    for (int i = 1; i < histogram.rows; ++i) {
         static const int thickness = 2;
         static const int lineType = 8;
         static const int shift = 0;
@@ -75,36 +77,25 @@ static void drawHistogram(const cv::Mat_<double> &histogram, int binWidth,
 //
 static cv::Mat computeHistogram(const cv::Mat &image)
 {
-    enum Color { BLUE, GREEN, RED };
     static const cv::Scalar color[] = {
         cv::Scalar(255,   0,   0),      // BLUE
         cv::Scalar(  0, 255,   0),      // GREEN
         cv::Scalar(  0,   0, 255)       // RED
     };
     static const int colorCount = sizeof color / sizeof color[0];
-    static const int histSize   = 256;
-    cv::Mat             plane[colorCount];
-    cv::Mat_<float> histogram[colorCount];
+    static const int binCount   = 256;
+    cv::Mat plane[colorCount];
     cv::split(image, plane);
+    cv::Mat_<float> hist[colorCount];
     for (int c = 0; c < colorCount; ++c) {
-        histogram[c] = calculatePlane(plane[c], histSize);
+        hist[c] = calculatePlane(plane[c], binCount);
     }
     for (int c = 0; c < colorCount; ++c) {
-        normalizeHistogram(histogram[c], image.rows);
+        normalizeHistogram(hist[c], image.rows);
     }
     cv::Mat result = cv::Mat_<cv::Vec3b>::zeros(image.rows, image.cols);
-    const int binWidth = cvRound(1.0 * result.cols / histSize);
     for (int c = 0; c < colorCount; ++c) {
-        const cv::Mat_<float> &h = histogram[c];
-        cv::Point p0(0, result.rows - cvRound(h(0)));
-        for (int i = 1; i < histSize; ++i) {
-            static const int thickness = 2;
-            static const int lineType = 8;
-            static const int shift = 0;
-            const cv::Point p1(i * binWidth, result.rows - cvRound(h(i)));
-            cv::line(result, p0, p1, color[c], thickness, lineType, shift);
-            p0 = p1;
-        }
+        drawHistogram(result, hist[c], color[c]);
     }
     return result;
 }
