@@ -77,21 +77,26 @@ static void drawHistogram(cv::Mat &image,
 //
 static cv::Mat computeHistogram(const cv::Mat &image)
 {
-    static const cv::Scalar color[] = {
-        cv::Scalar(255,   0,   0),      // blue
-        cv::Scalar(  0, 255,   0),      // green
-        cv::Scalar(  0,   0, 255)       // red
+    enum { BLUE, GREEN, RED, COLORCOUNT };
+    static const char *colorNames[] = {
+        [BLUE]  = "blue",
+        [GREEN] = "green",
+        [RED]   = "red"
     };
-    static const int colorCount = sizeof color / sizeof color[0];
+    static const cv::Scalar color[] = {
+        [BLUE]  = cv::Scalar(255,   0,   0),
+        [GREEN] = cv::Scalar(  0, 255,   0),
+        [RED]   = cv::Scalar(  0,   0, 255)
+    };
     static const int binCount   = 256;
     cv::Mat result = cv::Mat_<cv::Vec3b>::zeros(image.rows, image.cols);
-    cv::Mat plane[colorCount];
-    cv::Mat_<float> hist[colorCount];
+    cv::Mat plane[COLORCOUNT];
     cv::split(image, plane);
-    for (int c = 0; c < colorCount; ++c) { // for each color ...
-        hist[c] = calculatePlane(plane[c], binCount);
-        normalizeHistogram(hist[c], image.rows);
-        drawHistogram(result, hist[c], color[c]);
+    for (int c = 0; c < COLORCOUNT; ++c) { // for each color ...
+        makeWindow(colorNames[c], plane[c]);
+        cv::Mat_<float> hist = calculatePlane(plane[c], binCount);
+        normalizeHistogram(hist, image.rows);
+        drawHistogram(result, hist, color[c]);
     }
     return result;
 }
@@ -102,7 +107,7 @@ int main(int ac, const char *av[])
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
             std::cout << av[0] << ": Press some key to quit." << std::endl;
-            makeWindow("Source Image", image);
+            makeWindow("Source Image", image, 2);
             const cv::Mat histogram = computeHistogram(image);
             makeWindow("Color Histogram", histogram);
             cv::waitKey(0);
