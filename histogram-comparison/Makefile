@@ -6,7 +6,11 @@ CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := compareHistogram
-IMAGEFILE := ../resources/hand0.jpg ../resources/hand1.jpg ../resources/hand2.jpg
+IMAGEFILE := \
+	../resources/hand_sample1.jpg \
+	../resources/hand_sample2.jpg \
+	../resources/hand_sample3.jpg \
+	#
 
 main: $(EXECUTABLE)
 

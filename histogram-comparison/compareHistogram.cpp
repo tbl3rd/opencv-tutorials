@@ -27,7 +27,8 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
     ++moveCount;
 }
 
-
+// Return an HSV encoding of the BGR image bgr.
+//
 static cv::Mat bgrToHsv(const cv::Mat bgr)
 {
     cv::Mat result;
@@ -69,13 +70,13 @@ int main(int ac, const char *av[])
             static const int     dimensionCount = 2;
             static const bool    uniform        = true;
             static const bool    accumulate     = false;
-            cv::calcHist(&hsv[0], imageCount, channels, noMask, hist[0],
+            cv::calcHist(&hsv[i], imageCount, channels, noMask, hist[i],
                          dimensionCount, bins, ranges, uniform, accumulate);
             static const double  alpha          = 0.0;
             static const int     normKind       = cv::NORM_MINMAX;
             static const int     dtype          = -1;
             static const double  beta           = 1.0;
-            cv::normalize(hist[0], hist[0], alpha, beta,
+            cv::normalize(hist[i], hist[i], alpha, beta,
                           normKind, dtype, noMask);
         }
     }
@@ -109,7 +110,7 @@ int main(int ac, const char *av[])
               << std::endl
               << "              are compared."
               << std::endl << std::endl
-              << "Example: " << av[0] << " ../resources/hand?.jpg"
+              << "Example: " << av[0] << " ../resources/hand*.jpg"
               << std::endl << std::endl;
     return 1;
 }
