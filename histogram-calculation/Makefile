@@ -25,4 +25,8 @@ debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
 	lldb ./$(EXECUTABLE) -- $(IMAGEFILE)
 
-.PHONY: main help test clean debug
+.PHONY: main help test clean debug oldtest
+
+oldtest: old
+	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
+	./old $(IMAGEFILE)
