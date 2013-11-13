@@ -68,7 +68,8 @@ static void drawHistogram(cv::Mat &image,
     }
 }
 
-// Return a new image with a histogram of colors in image.
+// Return a new image with a histogram of colors in image after displaying
+// each channel of image in a separate window.
 //
 static cv::Mat computeHistogram(const cv::Mat &image)
 {

@@ -25,3 +25,4 @@
 /affine-tranformations/affine
 /histogram-equalization/equalizeHistogram
 /histogram-calculation/calculateHistogram
+/histogram-comparison/compareHistogram
