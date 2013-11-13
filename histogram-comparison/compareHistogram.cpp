@@ -30,9 +30,9 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 
 // Return a normalized Hue and Saturation histogram for the image hsv.
 //
-cv::MatND calculateHistogram(const cv::Mat &hsv)
+cv::Mat calculateHistogram(const cv::Mat &hsv)
 {
-    cv::MatND result;
+    cv::Mat result;
     static const cv::Mat noMask;
     static const int     hueBins        = 50;
     static const int     satBins        = 60;
@@ -70,7 +70,7 @@ static cv::Mat upperHalfOf(const cv::Mat &image)
 // Compare histogram[i] to histogram[0] for i = 0 to histogram.size().
 // Find the corresponding image names at name[i].
 //
-static void compareHistograms(std::vector<cv::MatND> &histogram,
+static void compareHistograms(const std::vector<cv::Mat> &histogram,
                               const char *name[])
 {
     static const struct Method {const char *name; int value;} method[] = {
@@ -104,7 +104,7 @@ static void showHistogramComparisons(int count,
                                      const cv::Mat bgr[])
 {
     std::vector<cv::Mat> hsv(count);
-    std::vector<cv::MatND> histogram(count);
+    std::vector<cv::Mat> histogram(count);
     for (int i = 0; i < count; ++i) {
         makeWindow(name[i], bgr[i]);
         cv::cvtColor(bgr[i], hsv[i], cv::COLOR_BGR2HSV);
@@ -117,12 +117,16 @@ static void showHistogramComparisons(int count,
     cv::waitKey(0);
 }
 
+// Read three images (named "Goal", "Tst0" and "Tst1") from the command
+// line.  Copy the upper half of "Goal" to another image named "Half".
+// Compute their HSV histograms, then compare them and show results.
+//
 int main(int ac, const char *av[])
 {
-    bool ok = ac == 4;
+    static const char *name[] = { "Goal", "Tst0", "Tst1", "Half" };
+    static const int count = sizeof name / sizeof name[0];
+    bool ok = ac == count;
     if (ok) {
-        static const char *name[] = { "Goal", "Tst0", "Tst1", "Half" };
-        static const int count = sizeof name / sizeof name[0];
         cv::Mat bgr[count];
         for (int i = 0; ok && i < count - 1; ++i) {
             bgr[i] = cv::imread(av[1 + i]);
