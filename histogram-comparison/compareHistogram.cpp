@@ -48,9 +48,9 @@ cv::Mat calculateHistogram(const cv::Mat &hsv)
     cv::calcHist(&hsv, imageCount, channels, noMask, result,
                  dimensionCount, bins, ranges, uniform, accumulate);
     static const double  alpha          = 0.0;
+    static const double  beta           = 1.0;
     static const int     normKind       = cv::NORM_MINMAX;
     static const int     dtype          = -1;
-    static const double  beta           = 1.0;
     cv::normalize(result, result, alpha, beta, normKind, dtype, noMask);
     return result;
 }

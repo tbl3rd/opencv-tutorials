@@ -26,3 +26,4 @@
 /histogram-equalization/equalizeHistogram
 /histogram-calculation/calculateHistogram
 /histogram-comparison/compareHistogram
+/back-projection/backProject
