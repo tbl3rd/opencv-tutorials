@@ -72,7 +72,7 @@ static void drawHistogram(cv::Mat &image, const cv::Mat_<float> &hist)
     static const int shift = 0;
     const float scale = 1.0 * image.rows / max;
     const int binWidth = image.cols / hist.rows;
-    image = cv::Mat::zeros(image.rows, image.cols, CV_8UC3);
+    image = cv::Mat::zeros(image.size(), CV_8UC3);
     for (int i = 0; i < hist.rows - 1; ++i) {
         const int height = image.rows - cvRound(scale * hist(i));
         const cv::Point lowerLeft(i * binWidth, image.rows);
