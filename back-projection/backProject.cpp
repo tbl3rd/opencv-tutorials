@@ -67,20 +67,14 @@ static cv::Mat calculateBackProjection(const cv::Mat &hue, const cv::Mat &hist)
 static void drawHistogram(cv::Mat &image, const cv::Mat_<float> &hist)
 {
     static const int max = std::numeric_limits<uchar>::max();
-    static const cv::Scalar colorRed(0, 0, 255);
+    static const cv::Scalar colorRed(0, 0, max);
     static const int lineType = -1;
     static const int shift = 0;
-    const int cols = image.cols;
-    const int rows = image.rows;
-    const int binWidth = cvRound(1.0 * image.cols / hist.rows);
-    std::cout << "image.cols == " << image.cols << std::endl;
-    std::cout << "image.rows == " << image.rows << std::endl;
-    std::cout << "hist.cols == " << hist.cols << std::endl;
-    std::cout << "hist.rows == " << hist.rows << std::endl;
-    std::cout << "binWidth == " << binWidth << std::endl;
-    image = cv::Mat::zeros(image.cols, image.rows, CV_8UC3);
-    for (int i = 0; i < hist.rows; ++i) {
-        const int height = image.rows - cvRound(max - hist(i));
+    const float scale = 1.0 * image.rows / max;
+    const int binWidth = image.cols / hist.rows;
+    image = cv::Mat::zeros(image.rows, image.cols, CV_8UC3);
+    for (int i = 0; i < hist.rows - 1; ++i) {
+        const int height = image.rows - cvRound(scale * hist(i));
         const cv::Point lowerLeft(i * binWidth, image.rows);
         const cv::Point upperRight((i + 1) * binWidth, height);
         cv::rectangle(image, lowerLeft, upperRight, colorRed, lineType, shift);
@@ -109,7 +103,6 @@ class BackProjectionDemo {
         const int binCount = MAX(pD->binsBar, 1);
         assert(binCount < pD->maxBins);
         const cv::Mat_<float> hist = calculateHistogram(pD->hueOnly, binCount);
-        std::cout << "hist == " << std::endl << hist << std::endl;
         pD->backProjection = calculateBackProjection(pD->hueOnly, hist);
         drawHistogram(pD->histImage, hist);
         cv::imshow("Histogram", pD->histImage);
@@ -149,7 +142,7 @@ public:
         makeWindow("Hue Only",        hueOnly);
         makeWindow("Histogram",       histImage);
         makeWindow("Back Projection", backProjection);
-        makeTrackbar("Hue Bins:", "Histogram",        &binsBar, maxBins - 1);
+        makeTrackbar("Hue Bins:", "Original", &binsBar, maxBins - 1);
         cv::imshow("Original",  bgrImage);
         cv::imshow("HSV Image", hsvImage);
         cv::imshow("Hue Only",  hueOnly);
@@ -163,6 +156,7 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat bgr = cv::imread(av[1]);
         if (bgr.data) {
+            std::cout << std::endl << "Press a key to quit." << std::endl;
             BackProjectionDemo bpDemo(bgr); bpDemo();
             cv::waitKey(0);
             return 0;
