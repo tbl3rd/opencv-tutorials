@@ -27,3 +27,4 @@
 /histogram-calculation/calculateHistogram
 /histogram-comparison/compareHistogram
 /back-projection/backProject
+/template-matching/matchTemplate
