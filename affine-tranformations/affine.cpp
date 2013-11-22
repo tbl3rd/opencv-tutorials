@@ -3,28 +3,30 @@
 #include <iostream>
 
 
+
 // Create a new unobscured named window for image.
 // Reset windows layout with when reset is not 0.
 //
-// The fudge works around how MacOSX lays out window decorations.
+// The 23 term works around how MacOSX decorates windows.
 //
 static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
     static int across = 1;
-    static int moveCount = 0;
+    static int count, moveX, moveY, maxY = 0;
     if (reset) {
         across = reset;
-        moveCount = 0;
+        count = moveX = moveY = maxY = 0;
     }
-    const int overCount = moveCount % across;
-    const int downCount = moveCount / across;
-    const int moveX = overCount * image.cols;
-    const int moveY = downCount * image.rows;
-    const int fudge = downCount == 0 ? 0 : (1 + downCount);
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
     cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
-    cv::moveWindow(window, moveX, moveY + 23 * fudge);
+    cv::moveWindow(window, moveX, moveY);
     cv::imshow(window, image);
-    ++moveCount;
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
 
 // Return a copy of src warped by mapping srcTri to dstTri.
@@ -68,7 +70,7 @@ int main(int ac, const char *av[])
             std::cout << av[0] << ": Press some key to quit." << std::endl;
             const cv::Mat warpDst = warpImage(src);
             const cv::Mat warpRotateDst = rotateImage(warpDst);
-            makeWindow("Source", src);
+            makeWindow("Source", src, 3);
             makeWindow("Warp", warpDst);
             makeWindow("Warp+Rotate", warpRotateDst);
             cv::waitKey(0);
