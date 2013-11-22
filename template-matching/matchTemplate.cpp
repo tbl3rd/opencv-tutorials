@@ -30,13 +30,54 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
     if (count % across == 0) {
         moveY += maxY + (1 + (count / across == 0)) * 23;
         maxY = moveX = 0;
-    } 
+    }
     ++count;
     cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
     cv::moveWindow(window, moveX, moveY);
     cv::imshow(window, image);
     moveX += image.cols;
     maxY = std::max(maxY, image.rows);
+}
+
+// Return normalized matches of tmp against src according to method.
+//
+static cv::Mat getMatches(const cv::Mat &src, const cv::Mat &tmp, int method)
+{
+    static const cv::Mat noMask;
+    static const double alpha = 0.0;
+    static const double beta = 1.0;
+    static const int dtype = -1;
+    const cv::Size resultSize = src.size() - tmp.size();
+    cv::Mat result(resultSize, CV_32FC1);
+    cv::matchTemplate(src, tmp, result, method);
+    cv::normalize(result, result, alpha, beta, cv::NORM_MINMAX, dtype, noMask);
+    return result;
+}
+
+// If useMin is true, return the location of the minimum value in matches.
+// Otherwise, return the location of the maximum value in matches.
+// 
+static cv::Point matchLocation(const cv::Mat &matches, bool useMin)
+{
+    static const cv::Mat noMask;
+    double minVal, maxVal;
+    cv::Point minLoc, maxLoc;
+    cv::minMaxLoc(matches, &minVal, &maxVal, &minLoc, &maxLoc, noMask);
+    return useMin ? minLoc : maxLoc;
+}
+
+// Draw a rectangle the size of tmp on image at p.
+//
+static void drawMatch(cv::Mat &image, const cv::Mat &tmp, const cv::Point &p)
+{
+    static const cv::Scalar black(0, 0, 0);
+    static const int lineThickness = 2;
+    static const int lineType = 8;
+    static const int shift = 0;
+    const int x = p.x + tmp.size().width;
+    const int y = p.y + tmp.size().height;
+    const cv::Point corner(x, y);
+    cv::rectangle(image, p, corner, black, lineThickness, lineType, shift);
 }
 
 // The match methods available to cv::matchTemplate().
@@ -60,33 +101,14 @@ static const int matchMethodCount = sizeof matchMethod / sizeof matchMethod[0];
 static void showMatch(const cv::Mat &src, const cv::Mat &tmp,
                       const MatchMethod &method)
 {
-    const cv::Size resultsSize = src.size() - tmp.size();
-    cv::Mat results(resultsSize, CV_32FC1);
+    cv::Mat matches = getMatches(src, tmp, method.kind);
+    const cv::Point matchLoc = matchLocation(matches, method.useMin);
     cv::Mat display;
     src.copyTo(display);
-    cv::matchTemplate(src, tmp, results, method.kind);
-    static const cv::Mat noMask;
-    static const double alpha = 0.0;
-    static const double beta = 1.0;
-    static const int dtype = -1;
-    cv::normalize(results, results, alpha, beta,
-                  cv::NORM_MINMAX, dtype, noMask);
-    double minVal, maxVal;
-    cv::Point minLoc, maxLoc;
-    cv::minMaxLoc(results, &minVal, &maxVal, &minLoc, &maxLoc, noMask);
-    static const cv::Scalar colorBlack(0, 0, 0);
-    static const int lineThickness = 2;
-    static const int lineType = 8;
-    static const int shift = 0;
-    const cv::Point matchLoc = method.useMin ? minLoc : maxLoc;
-    const cv::Point p(matchLoc.x + tmp.size().width,
-                      matchLoc.y + tmp.size().height);
-    cv::rectangle(display, matchLoc, p, colorBlack, lineThickness,
-                  lineType, shift);
-    cv::rectangle(results, matchLoc, p, colorBlack, lineThickness,
-                  lineType, shift);
+    drawMatch(display, tmp, matchLoc);
+    drawMatch(matches, tmp, matchLoc);
     makeWindow("Template Location", display);
-    makeWindow(method.name, results);
+    makeWindow(method.name, matches);
 }
 
 // Demonstrate matches of tmp against src with all the available methods.
@@ -110,7 +132,7 @@ int main(int ac, const char *av[])
         const cv::Mat tmp = cv::imread(av[2]);
         if (src.data && tmp.data) {
             std::cout << std::endl << "Press 'q' to quit." << std::endl;
-            std::cout << std::endl << "Any other key to advance." << std::endl;
+            std::cout << std::endl << "Or other key to advance." << std::endl;
             showAllMatches(src, tmp);
             return 0;
         }
