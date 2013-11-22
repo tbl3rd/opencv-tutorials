@@ -28,3 +28,4 @@
 /histogram-comparison/compareHistogram
 /back-projection/backProject
 /template-matching/matchTemplate
+/finding-contours/findContours
