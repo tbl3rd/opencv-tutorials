@@ -17,25 +17,26 @@ static bool waitSeconds(int seconds)
 // Create a new unobscured named window for image.
 // Reset windows layout with when reset is not 0.
 //
-// The fudge works around how MacOSX lays out window decorations.
+// The 23 factor works around how MacOSX lays out window decorations.
 //
 static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
     static int across = 1;
-    static int moveCount = 0;
+    static int count, moveX, moveY, maxY = 0;
     if (reset) {
         across = reset;
-        moveCount = 0;
+        count = moveX = moveY = maxY = 0;
     }
-    const int overCount = moveCount % across;
-    const int downCount = moveCount / across;
-    const int moveX = overCount * image.cols;
-    const int moveY = downCount * image.rows;
-    const int fudge = downCount == 0 ? 0 : (1 + downCount);
+    if (count % across == 0) {
+        moveY += maxY + (1 + (count / across == 0)) * 23;
+        maxY = moveX = 0;
+    } 
+    ++count;
     cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
-    cv::moveWindow(window, moveX, moveY + 23 * fudge);
+    cv::moveWindow(window, moveX, moveY);
     cv::imshow(window, image);
-    ++moveCount;
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
 
 // The match methods available to cv::matchTemplate().
@@ -94,7 +95,7 @@ static bool showAllMatches(const cv::Mat &src, const cv::Mat &tmp)
 {
     for (int i = 0; i < matchMethodCount; ++i) {
         cv::destroyAllWindows();
-        makeWindow("Source Image", src, 1);
+        makeWindow("Source Image", src, 4);
         makeWindow("Template Image", tmp);
         showMatch(src, tmp, matchMethod[i]);
         if (waitSeconds(0)) return true;
