@@ -34,10 +34,10 @@ class DemoDisplay {
 
 protected:
 
-    const cv::Mat &srcImage;
-    cv::Mat edgesImage;
-    cv::Mat cannyImage;
-    cv::Mat contoursImage;
+    const cv::Mat &srcImage;            // the original image
+    cv::Mat edgesImage;                 // the Canny edges
+    cv::Mat cannyImage;                 // original masked by edges
+    cv::Mat contoursImage;              // contours in random colors
 
     // Return a grayscale copy of image blurred by a kernel of size kSize.
     //
@@ -54,17 +54,19 @@ protected:
     //
     void cannyDetect(double threshold)
     {
+        static const cv::Mat black
+            = cv::Mat::zeros(cannyImage.size(), cannyImage.type());
         static const int ratio = 2;
         static const int kSize = 3;
         static const cv::Size kernel(kSize, kSize);
-        static const cv::Mat black
-            = cv::Mat::zeros(srcImage.size(), srcImage.type());
         static const cv::Mat grayBlur = DemoDisplay::grayBlur(srcImage, kSize);
         cv::Canny(grayBlur, edgesImage, threshold, ratio * threshold, kSize);
         black.copyTo(cannyImage);
         srcImage.copyTo(cannyImage, edgesImage);
     }
 
+    // Return a random BGR color.
+    //
     static cv::Scalar randomColor(void)
     {
         static const int max = std::numeric_limits<uchar>::max();
@@ -75,6 +77,12 @@ protected:
         return cv::Scalar(blue, green, red);
     }
 
+    // Find contours in edgesImage and draw each in some random color on
+    // contoursImage.
+    //
+    // The reference implies that drawContours() ignores hierarchy when
+    // maxLevel is 0 though. =tbl
+    //
     void apply(double threshold)
     {
         static const cv::Mat black
@@ -102,19 +110,19 @@ private:
     // The position of the Threshold trackbar and its maximum.
     //
     int thresholdBar;
-    const int maxThreshold;
+    const int maxBar;
 
     // The callback passed to createTrackbar() where all state is at p.
     //
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->thresholdBar <= pD->maxThreshold);
+        assert(pD->thresholdBar <= pD->maxBar);
         const double value = pD->thresholdBar;
         pD->apply(value);
-        cv::imshow("Edges",      pD->edgesImage);
-        cv::imshow("Canny Mask", pD->cannyImage);
-        cv::imshow("Contours",   pD->contoursImage);
+        cv::imshow("Canny Edges", pD->edgesImage);
+        cv::imshow("Canny Mask",  pD->cannyImage);
+        cv::imshow("Contours",    pD->contoursImage);
     }
 
     // Add a trackbar with label of range 0 to max in bar.
@@ -133,16 +141,18 @@ public:
     // Construct a Canny demo display operating on source image s.
     //
     DemoDisplay(const cv::Mat &s):
-        srcImage(s), thresholdBar(100), maxThreshold(255)
+        srcImage(s), thresholdBar(100), maxBar(255)
     {
+        static const int max = std::numeric_limits<uchar>::max();
+        assert(maxBar == max);
         srcImage.copyTo(cannyImage);
         contoursImage.create(cannyImage.size(), CV_8UC3);
-        makeWindow("Edges",      cannyImage);
+        makeWindow("Canny Edges",      cannyImage);
         makeWindow("Canny Mask", cannyImage);
         makeWindow("Contours",   contoursImage);
-        makeTrackbar("Threshold:", "Edges",      &thresholdBar,  maxThreshold);
-        makeTrackbar("Threshold:", "Canny Mask", &thresholdBar,  maxThreshold);
-        makeTrackbar("Threshold:", "Contours",   &thresholdBar,  maxThreshold);
+        makeTrackbar("Threshold:", "Canny Edges", &thresholdBar,  maxBar);
+        makeTrackbar("Threshold:", "Canny Mask",  &thresholdBar,  maxBar);
+        makeTrackbar("Threshold:", "Contours",    &thresholdBar,  maxBar);
     }
 };
 
