@@ -6,24 +6,26 @@
 // Create a new unobscured named window for image.
 // Reset windows layout with when reset is not 0.
 //
-// The fudge works around how MacOSX lays out window decorations.
+// The 23 term works around how MacOSX decorates windows.
 //
 static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
     static int across = 1;
-    static int moveCount = 0;
+    static int count, moveX, moveY, maxY = 0;
     if (reset) {
         across = reset;
-        moveCount = 0;
+        count = moveX = moveY = maxY = 0;
     }
-    const int overCount = moveCount % across;
-    const int downCount = moveCount / across;
-    const int moveX = overCount * image.cols;
-    const int moveY = downCount * image.rows;
-    const int fudge = downCount == 0 ? 0 : (1 + downCount);
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
     cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
-    cv::moveWindow(window, moveX, moveY + 23 * fudge);
-    ++moveCount;
+    cv::moveWindow(window, moveX, moveY);
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
 
 // Return a Hue histogram normalized [0, 255) for the hue-only image hue.
@@ -142,7 +144,11 @@ public:
         makeWindow("Hue Only",        hueOnly);
         makeWindow("Histogram",       histImage);
         makeWindow("Back Projection", backProjection);
-        makeTrackbar("Hue Bins:", "Original", &binsBar, maxBins - 1);
+        makeTrackbar("Hue Bins:", "Original",        &binsBar, maxBins - 1);
+        makeTrackbar("Hue Bins:", "HSV Image",       &binsBar, maxBins - 1);
+        makeTrackbar("Hue Bins:", "Hue Only",        &binsBar, maxBins - 1);
+        makeTrackbar("Hue Bins:", "Histogram",       &binsBar, maxBins - 1);
+        makeTrackbar("Hue Bins:", "Back Projection", &binsBar, maxBins - 1);
         cv::imshow("Original",  bgrImage);
         cv::imshow("HSV Image", hsvImage);
         cv::imshow("Hue Only",  hueOnly);

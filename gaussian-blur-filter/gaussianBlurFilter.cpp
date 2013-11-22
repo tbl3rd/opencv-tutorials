@@ -5,6 +5,31 @@
 
 static const int MAX_KERNEL_LENGTH = 31;
 
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
+//
+// The 23 term works around how MacOSX decorates windows.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
+{
+    static int across = 3;
+    static int count, moveX, moveY, maxY = 0;
+    if (reset) {
+        across = reset;
+        count = moveX = moveY = maxY = 0;
+    }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
+    cv::moveWindow(window, moveX, moveY);
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
+}
+
 static bool displayDst(const cv::Mat &dst, const char *window, int delay)
 {
     cv::imshow(window, dst);
@@ -23,18 +48,6 @@ static bool displayLong(const cv::Mat &dst, const char *window)
     return displayDst(dst, window, DELAY_CAPTION);
 }
 
-// Display dst in the named window.  Lay windows out 3 across.
-//
-static void makeWindow(const cv::Mat &dst, const char *window)
-{
-    static int moveCount = 0;
-    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
-    const int moveX = (moveCount % 3) * dst.cols;
-    const int moveY = (moveCount / 3) * (50 + dst.rows);
-    cv::moveWindow(window, moveX, moveY);
-    ++moveCount;
-}
-
 static bool displayCaption(const cv::Mat &src, const char *caption)
 {
     static const cv::Mat black = cv::Mat::zeros(src.size(), src.type());
@@ -43,7 +56,7 @@ static bool displayCaption(const cv::Mat &src, const char *caption)
     static const cv::Scalar colorWhite(255, 255, 255);
     cv::Mat dst = black.clone();
     const cv::Point origin(dst.cols / 4, dst.rows / 2);
-    makeWindow(dst, caption);
+    makeWindow(caption, dst);
     cv::putText(dst, caption, origin, face, scale, colorWhite);
     return displayLong(dst, caption);
 }

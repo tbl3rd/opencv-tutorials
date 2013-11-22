@@ -3,14 +3,29 @@
 #include <iostream>
 
 
-// Show image with label in an unobstructed window.
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
 //
-static void showImage(const char *label, const cv::Mat &image)
+// The 23 term works around how MacOSX decorates windows.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
-    static int move = 0;
-    cv::imshow(label, image);
-    cv::moveWindow(label, move, 0);
-    move += image.cols;
+    static int across = 1;
+    static int count, moveX, moveY, maxY = 0;
+    if (reset) {
+        across = reset;
+        count = moveX = moveY = maxY = 0;
+    }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
+    cv::moveWindow(window, moveX, moveY);
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
 
 // Return a copy of image padded out to optimal size for a DFT.
@@ -107,11 +122,11 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat image = cv::imread(av[1], cv::IMREAD_GRAYSCALE);
         if (image.data) {
-            showImage("Input Image", image);
+            makeWindow("Input Image", image, 3);
             const cv::Mat nldft = normalizedLogDiscreteFourierTransform(image);
-            showImage("normalized logarithmic DFT", nldft);
+            makeWindow("normalized logarithmic DFT", nldft);
             const cv::Mat output = centerOrigin(nldft);
-            showImage("spectrum magnitude", output);
+            makeWindow("spectrum magnitude", output);
             cv::waitKey();
             return 0;
         }

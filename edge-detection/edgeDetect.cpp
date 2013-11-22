@@ -3,17 +3,29 @@
 #include <iostream>
 
 
-// Display dst in the named window.  Lay windows out 3 across.
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
 //
-static void makeWindow(const char *window, const cv::Mat &image)
+// The 23 term works around how MacOSX decorates windows.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
-    static const int across = 3;
-    static int moveCount = 0;
-    cv::imshow(window, image);
-    const int moveX = (moveCount % across) * image.cols;
-    const int moveY = (moveCount / across) * (50 + image.rows);
+    static int across = 1;
+    static int count, moveX, moveY, maxY = 0;
+    if (reset) {
+        across = reset;
+        count = moveX = moveY = maxY = 0;
+    }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
     cv::moveWindow(window, moveX, moveY);
-    ++moveCount;
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
 
 // Return src after applying a default Gaussian blur with a kernel of size
@@ -26,7 +38,7 @@ static cv::Mat showOriginalBlurGray(const cv::Mat &src, int kernelSize)
     static const double sigmaY = 0.0;
     static const int borderKind = cv::BORDER_DEFAULT;
     const cv::Size kernel(kernelSize, kernelSize);
-    makeWindow("Original", src);
+    makeWindow("Original", src, 3);
     cv::Mat blur;
     cv::GaussianBlur(src, blur, kernel, sigmaX, sigmaY, borderKind);
     makeWindow("Original Blur", blur);

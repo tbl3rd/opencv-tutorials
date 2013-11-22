@@ -3,7 +3,6 @@
 #include <iostream>
 
 
-
 // Create a new unobscured named window for image.
 // Reset windows layout with when reset is not 0.
 //

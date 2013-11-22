@@ -6,26 +6,27 @@
 // Create a new unobscured named window for image.
 // Reset windows layout with when reset is not 0.
 //
-// The fudge works around how MacOSX lays out window decorations.
+// The 23 term works around how MacOSX decorates windows.
 //
 static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
-    static int across = 1;
-    static int moveCount = 0;
+    static int across = 2;
+    static int count, moveX, moveY, maxY = 0;
     if (reset) {
         across = reset;
-        moveCount = 0;
+        count = moveX = moveY = maxY = 0;
     }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
     cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
-    const int overCount = moveCount % across;
-    const int downCount = moveCount / across;
-    const int moveX = overCount * image.cols;
-    const int moveY = downCount * image.rows;
-    const int fudge = downCount == 0 ? 0 : (1 + downCount);
-    cv::moveWindow(window, moveX, moveY + 23 * fudge);
-    ++moveCount;
+    cv::moveWindow(window, moveX, moveY);
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
-
 
 // Wait seconds or until some key is pressed.
 // Return true if that key was 'q'.
@@ -197,7 +198,7 @@ public:
 static bool showRemaps(const char *window, const cv::Mat &src,
                        int mapCount, const ImageMap *maps[])
 {
-    makeWindow(window, src, 2);
+    makeWindow(window, src, 3);
     for (int i = 0; i < mapCount; ++i) {
         const ImageMap &map = *maps[i];
         const cv::Mat dst = map(src);
@@ -224,7 +225,7 @@ static bool showMapRemaps(const char *window, const cv::Mat &src,
         cv::destroyAllWindows();
         const ImageMap &outer = *maps[i];
         const cv::Mat outerDst = outer(src);
-        makeWindow(outer.name(), outerDst, 2);
+        makeWindow(outer.name(), outerDst, 3);
         cv::imshow(outer.name(), outerDst);
         for (int j = 0; j < mapCount; ++j) {
             const ImageMap &inner = *maps[j];

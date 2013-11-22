@@ -3,17 +3,29 @@
 #include <iostream>
 
 
-// Display image in the named window unobscured.
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
 //
-static void makeWindow(const char *window, const cv::Mat &image)
+// The 23 term works around how MacOSX decorates windows.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 {
-    static const int across = 2;
-    static int moveCount = 0;
-    cv::imshow(window, image);
-    const int moveX = (moveCount % across) * image.cols;
-    const int moveY = (moveCount / across) * (50 + image.rows);
+    static int across = 1;
+    static int count, moveX, moveY, maxY = 0;
+    if (reset) {
+        across = reset;
+        count = moveX = moveY = maxY = 0;
+    }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
     cv::moveWindow(window, moveX, moveY);
-    ++moveCount;
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
 }
 
 // Draw circle (x, y, r) on image with a green center at (x, y) and a red
@@ -81,7 +93,7 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
-            makeWindow("Original", image);
+            makeWindow("Original", image, 2);
             const cv::Mat blurred = blurGray(image);
             makeWindow("Blurred Grayscale", blurred);
             const cv::Mat circles = drawHoughCircles(blurred, image);
