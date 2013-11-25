@@ -5,11 +5,7 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-EXECUTABLE := old-bound
 EXECUTABLE := bound
-IMAGEFILE := ../resources/abbey-road.jpg
-IMAGEFILE := ../resources/balloons.jpg
-IMAGEFILE := ../resources/hot-air-balloons.jpg
 IMAGEFILE := ../resources/jets.jpg
 
 main: $(EXECUTABLE)

@@ -32,8 +32,8 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 //
 class DemoDisplay {
 
-    const cv::Mat &srcImage;            // the original image
-    cv::Mat drawing;                    // bounds in random colors
+    const cv::Mat &source;              // the original image
+    cv::Mat bounds;                     // bounds in random colors
 
     int bar;                            // position of threshold trackbar
     const int maxBar;                   // maximum value of trackbar
@@ -72,51 +72,77 @@ class DemoDisplay {
         return cv::Scalar(blue, green, red);
     }
 
-    // Draw bounds around contours with hierarchy over black drawing.
+    // Find polygons, rectangles, and circles (center, radius) bounding the
+    // contours in contour.  All vectors have the same element count.
+    //
+    static void findBounds(const std::vector<std::vector<cv::Point> > &contour,
+                           std::vector<std::vector<cv::Point> > &polygon,
+                           std::vector<cv::Rect> &rectangle,
+                           std::vector<cv::Point2f> &center,
+                           std::vector<float> &radius)
+    {
+        static const double epsilon = 3.0;
+        static const bool closed = true;
+        const int size = contour.size();
+        for (int i = 0; i < size; ++i) {
+            cv::approxPolyDP(contour[i], polygon[i], epsilon, closed);
+            rectangle[i] = cv::boundingRect(polygon[i]);
+            cv::minEnclosingCircle(polygon[i], center[i], radius[i]);
+        }
+    }
+
+    // Draw polygons, rectangles, and circles (center, radius) on img in
+    // random colors.  All vectors have the same element count.
     //
     // The reference implies that drawContours() ignores hierarchy when
     // maxLevel is 0 though. =tbl
     //
-    void drawBounds(const std::vector<std::vector<cv::Point> > &contour,
-                    const std::vector<cv::Vec4i> &hierarchy)
-
+    static void drawBounds(cv::Mat &img,
+                           const std::vector<cv::Vec4i> &hierarchy,
+                           std::vector<std::vector<cv::Point> > &polygon,
+                           std::vector<cv::Rect> &rectangle,
+                           std::vector<cv::Point2f> &center,
+                           std::vector<float> &radius)
     {
-        static const cv::Mat black
-            = cv::Mat::zeros(drawing.size(), drawing.type());
-        static const bool orientClockwise = false;
-        static const bool returnPoints = true;
+        static const cv::Point offset(0, 0);
+        static const int maxLevel = 0;
         static const int polyThickness = 1;
         static const int boundThickness = 2 * polyThickness;
         static const int lineType = 8;
-        static const int maxLevel = 0;
-        static const double epsilon = 3.0;
-        static const bool closed = true;
-        static const cv::Point offset(0, 0);
         static const int shift = 0;
+        const int size = hierarchy.size();
+        for (int i = 0; i < size; ++i) {
+            const cv::Scalar color = randomColor();
+            const cv::Rect &r = rectangle[i];
+            cv::drawContours(img, polygon, i, color, polyThickness,
+                             lineType, hierarchy, maxLevel, offset);
+            cv::rectangle(img, r.tl(), r.br(),
+                          color, boundThickness, lineType, shift);
+            cv::circle(img, center[i], radius[i], color,
+                       boundThickness, lineType, shift);
+        }
+    }
+
+
+    // Draw bounds around contours with hierarchy over black bounds.
+    //
+    void showBounds(const std::vector<std::vector<cv::Point> > &contour,
+                    const std::vector<cv::Vec4i> &hierarchy)
+    {
+        static const cv::Mat black
+            = cv::Mat::zeros(bounds.size(), bounds.type());
         const int size = contour.size();
         std::vector<std::vector<cv::Point> > polygon(size);
         std::vector<cv::Rect> rect(size);
         std::vector<cv::Point2f> center(size);
         std::vector<float> radius(size);
-        for (int i = 0; i < size; ++i) {
-            cv::approxPolyDP(contour[i], polygon[i], epsilon, closed);
-            rect[i] = cv::boundingRect(polygon[i]);
-            cv::minEnclosingCircle(polygon[i], center[i], radius[i]);
-        }
-        black.copyTo(drawing);
-        for (int i = 0; i < size; ++i) {
-            const cv::Scalar color = randomColor();
-            cv::drawContours(drawing, polygon, i, color, polyThickness,
-                             lineType, hierarchy, maxLevel, offset);
-            cv::rectangle(drawing, rect[i].tl(), rect[i].br(),
-                          color, boundThickness, lineType, shift);
-            cv::circle(drawing, center[i], radius[i], color,
-                       polyThickness, lineType, shift);
-        }
+        findBounds(contour, polygon, rect, center, radius);
+        black.copyTo(bounds);
+        drawBounds(bounds, hierarchy, polygon, rect, center, radius);
     }
 
-    // Find contours in srcImage, at threshold t less than max, and draw
-    // bounding circles and rectangles in some random color on drawing.
+    // Find contours in source, at threshold t less than max, and draw
+    // bounding circles and rectangles in some random color on bounds.
     //
     void apply(double t, double max)
     {
@@ -125,9 +151,9 @@ class DemoDisplay {
         static const cv::Point offset(0, 0);
         std::vector<std::vector<cv::Point> > contour;
         std::vector<cv::Vec4i> hierarchy;
-        const cv::Mat thresholds = detectThresholds(srcImage, t, max);
+        const cv::Mat thresholds = detectThresholds(source, t, max);
         cv::findContours(thresholds, contour, hierarchy, mode, method, offset);
-        drawBounds(contour, hierarchy);
+        showBounds(contour, hierarchy);
     }
 
     // The callback passed to createTrackbar() where all state is at p.
@@ -138,7 +164,7 @@ class DemoDisplay {
         assert(pD->bar <= pD->maxBar);
         const double value = pD->bar;
         pD->apply(value, pD->maxBar);
-        cv::imshow("Bounds",  pD->drawing);
+        cv::imshow("Bounds",  pD->bounds);
     }
 
     // Add a trackbar with label of range 0 to max in bar.
@@ -150,21 +176,25 @@ class DemoDisplay {
 
 public:
 
-    // Show this demo display window.
+    // Show this demo display.
     //
     void operator()(void) { DemoDisplay::show(0, this); }
+
+    // Return the current threshold.
+    //
+    int threshold(void) { return bar; }
 
     // Demonstrate bounding polygonal contours with circles and rectangles.
     //
     DemoDisplay(const cv::Mat &s):
-        srcImage(s), drawing(s.size(), CV_8UC3),
+        source(s), bounds(s.size(), CV_8UC3),
         bar(100), maxBar(std::numeric_limits<uchar>::max())
     {
-        makeWindow("Original", srcImage, 2);
-        makeWindow("Bounds",    drawing);
+        makeWindow("Original", source, 2);
+        makeWindow("Bounds",   bounds);
         makeTrackbar("Threshold:", "Original", &bar, maxBar);
-        makeTrackbar("Threshold:", "Bounds",    &bar, maxBar);
-        cv::imshow("Original", srcImage);
+        makeTrackbar("Threshold:", "Bounds",   &bar, maxBar);
+        cv::imshow("Original", source);
     }
 };
 
@@ -174,8 +204,10 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
+            std::cout << "Press a key to quit." << std::endl;
             DemoDisplay demo(image); demo();
             cv::waitKey(0);
+            std::cout << "Threshold was: " << demo.threshold() << std::endl;
             return 0;
         }
     }
