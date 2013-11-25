@@ -32,11 +32,12 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 //
 class DemoDisplay {
 
-protected:
-
     const cv::Mat &srcImage;            // the original image
     cv::Mat itsThresholds;              // original masked by edges
     cv::Mat hullsImage;                 // contours in random colors
+
+    int bar;                            // position of threshold trackbar
+    const int maxBar;                   // maximum value of trackbar
 
     // Return a grayscale copy of image blurred by a kernel of size kSize.
     //
@@ -84,6 +85,8 @@ protected:
     {
         static const cv::Mat black
             = cv::Mat::zeros(hullsImage.size(), hullsImage.type());
+        static const bool orientClockwise = false;
+        static const bool returnPoints = true;
         static const int lineThickness = 1;
         static const int lineType = 8;
         static const int maxLevel = 0;
@@ -92,7 +95,7 @@ protected:
         black.copyTo(hullsImage);
         for (int i = 0; i < contour.size(); ++i) {
             const cv::Scalar color = randomColor();
-            cv::convexHull(contour[i], hull[i], false);
+            cv::convexHull(contour[i], hull[i], orientClockwise, returnPoints);
             cv::drawContours(hullsImage, contour, i, color, lineThickness,
                              lineType, hierarchy, maxLevel, offset);
             cv::drawContours(hullsImage, hull, i, color, lineThickness,
@@ -100,37 +103,29 @@ protected:
         }
     }
 
-    // Find contours in itsThresholds and draw their convex hull in some
-    // random color on hullsImage.
+    // Find contours in srcImage, at threshold t less than max, and draw
+    // their convex hull in some random color on hullsImage.
     //
-    void apply(double threshold)
+    void apply(double t, double max)
     {
         static const int mode = cv::RETR_TREE;
         static const int method = cv::CHAIN_APPROX_SIMPLE;
         static const cv::Point offset(0, 0);
         std::vector<std::vector<cv::Point> > contour;
         std::vector<cv::Vec4i> hierarchy;
-        const cv::Mat thresholds
-            = detectThresholds(srcImage, threshold, maxBar);
+        const cv::Mat thresholds = detectThresholds(srcImage, t, max);
         cv::findContours(thresholds, contour, hierarchy, mode, method, offset);
         drawHulls(contour, hierarchy);
     }
-
-private:
-
-    // The position of the Threshold trackbar and its maximum.
-    //
-    int thresholdBar;
-    const int maxBar;
 
     // The callback passed to createTrackbar() where all state is at p.
     //
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->thresholdBar <= pD->maxBar);
-        const double value = pD->thresholdBar;
-        pD->apply(value);
+        assert(pD->bar <= pD->maxBar);
+        const double value = pD->bar;
+        pD->apply(value, pD->maxBar);
         cv::imshow("Hulls",  pD->hullsImage);
     }
 
@@ -151,14 +146,12 @@ public:
     //
     DemoDisplay(const cv::Mat &s):
         srcImage(s), hullsImage(s.size(), CV_8UC3),
-        thresholdBar(100), maxBar(255)
+        bar(100), maxBar(std::numeric_limits<uchar>::max())
     {
-        static const int max = std::numeric_limits<uchar>::max();
-        assert(maxBar == max);
         makeWindow("Original", srcImage, 2);
         makeWindow("Hulls",    hullsImage);
-        makeTrackbar("Threshold:", "Original", &thresholdBar, maxBar);
-        makeTrackbar("Threshold:", "Hulls",    &thresholdBar, maxBar);
+        makeTrackbar("Threshold:", "Original", &bar, maxBar);
+        makeTrackbar("Threshold:", "Hulls",    &bar, maxBar);
         cv::imshow("Original", srcImage);
     }
 };
@@ -174,7 +167,7 @@ int main(int ac, const char *av[])
             return 0;
         }
     }
-    std::cerr << av[0] << ": Demonstrate contour finding."
+    std::cerr << av[0] << ": Find a convex hull around contours."
               << std::endl << std::endl
               << "Usage: " << av[0] << " <image-file>" << std::endl
               << std::endl
