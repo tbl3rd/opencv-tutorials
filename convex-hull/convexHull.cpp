@@ -28,16 +28,15 @@ static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
 }
 
 
-// A display to demonstrate finding contours over Canny edges.
+// A display to demonstrate finding convex hull over contours.
 //
 class DemoDisplay {
 
 protected:
 
     const cv::Mat &srcImage;            // the original image
-    cv::Mat edgesImage;                 // the Canny edges
-    cv::Mat cannyImage;                 // original masked by edges
-    cv::Mat contoursImage;              // contours in random colors
+    cv::Mat itsThresholds;              // original masked by edges
+    cv::Mat hullsImage;                 // contours in random colors
 
     // Return a grayscale copy of image blurred by a kernel of size kSize.
     //
@@ -49,20 +48,17 @@ protected:
         return result;
     }
 
-    // Apply Canny() with threshold to srcImage to construct an mask of
-    // detected edges and overlay that mask back onto srcImage.
+    // Return thresholds in image at threshold t less than max.
     //
-    void cannyDetect(double threshold)
+    static const cv::Mat detectThresholds(const cv::Mat &image,
+                                          double t, double max)
     {
-        static const cv::Mat black
-            = cv::Mat::zeros(cannyImage.size(), cannyImage.type());
-        static const int ratio = 2;
         static const int kSize = 3;
         static const cv::Size kernel(kSize, kSize);
-        static const cv::Mat grayBlur = DemoDisplay::grayBlur(srcImage, kSize);
-        cv::Canny(grayBlur, edgesImage, threshold, ratio * threshold, kSize);
-        black.copyTo(cannyImage);
-        srcImage.copyTo(cannyImage, edgesImage);
+        static const cv::Mat grayBlur = DemoDisplay::grayBlur(image, kSize);
+        cv::Mat result;
+        cv::threshold(grayBlur, result, t, max, cv::THRESH_BINARY);
+        return result;
     }
 
     // Return a random BGR color.
@@ -76,32 +72,48 @@ protected:
         return cv::Scalar(blue, green, red);
     }
 
-    // Find contours in edgesImage and draw each in some random color on
-    // contoursImage.
+    // Draw contours in contour with hierarchy and convex hull around them
+    // over black hullsImage.
     //
     // The reference implies that drawContours() ignores hierarchy when
     // maxLevel is 0 though. =tbl
     //
-    void apply(double threshold)
+    void drawHulls(const std::vector<std::vector<cv::Point> > &contour,
+                   const std::vector<cv::Vec4i> &hierarchy)
+
     {
         static const cv::Mat black
-            = cv::Mat::zeros(contoursImage.size(), contoursImage.type());
+            = cv::Mat::zeros(hullsImage.size(), hullsImage.type());
+        static const int lineThickness = 1;
+        static const int lineType = 8;
+        static const int maxLevel = 0;
+        static const cv::Point offset(0, 0);
+        std::vector<std::vector<cv::Point> > hull(contour.size());
+        black.copyTo(hullsImage);
+        for (int i = 0; i < contour.size(); ++i) {
+            const cv::Scalar color = randomColor();
+            cv::convexHull(contour[i], hull[i], false);
+            cv::drawContours(hullsImage, contour, i, color, lineThickness,
+                             lineType, hierarchy, maxLevel, offset);
+            cv::drawContours(hullsImage, hull, i, color, lineThickness,
+                             lineType, hierarchy, maxLevel, offset);
+        }
+    }
+
+    // Find contours in itsThresholds and draw their convex hull in some
+    // random color on hullsImage.
+    //
+    void apply(double threshold)
+    {
         static const int mode = cv::RETR_TREE;
         static const int method = cv::CHAIN_APPROX_SIMPLE;
         static const cv::Point offset(0, 0);
-        static const int lineThickness = 2;
-        static const int lineType = 8;
-        static const int maxLevel = 0;
-        std::vector<std::vector<cv::Point> > contours;
+        std::vector<std::vector<cv::Point> > contour;
         std::vector<cv::Vec4i> hierarchy;
-        cannyDetect(threshold);
-        cv::findContours(edgesImage, contours, hierarchy, mode, method, offset);
-        black.copyTo(contoursImage);
-        for (int i = 0; i< contours.size(); ++i) {
-            const cv::Scalar color = randomColor();
-            cv::drawContours(contoursImage, contours, i, color, lineThickness,
-                             lineType, hierarchy, maxLevel, offset);
-        }
+        const cv::Mat thresholds
+            = detectThresholds(srcImage, threshold, maxBar);
+        cv::findContours(thresholds, contour, hierarchy, mode, method, offset);
+        drawHulls(contour, hierarchy);
     }
 
 private:
@@ -119,9 +131,7 @@ private:
         assert(pD->thresholdBar <= pD->maxBar);
         const double value = pD->thresholdBar;
         pD->apply(value);
-        cv::imshow("Canny Edges", pD->edgesImage);
-        cv::imshow("Canny Mask",  pD->cannyImage);
-        cv::imshow("Contours",    pD->contoursImage);
+        cv::imshow("Hulls",  pD->hullsImage);
     }
 
     // Add a trackbar with label of range 0 to max in bar.
@@ -137,21 +147,19 @@ public:
     //
     void operator()(void) { DemoDisplay::show(0, this); }
 
-    // Find and display contours in image s.
+    // Demonstrate finding and drawing a convex hull on image s.
     //
     DemoDisplay(const cv::Mat &s):
-        srcImage(s), thresholdBar(100), maxBar(255)
+        srcImage(s), hullsImage(s.size(), CV_8UC3),
+        thresholdBar(100), maxBar(255)
     {
         static const int max = std::numeric_limits<uchar>::max();
         assert(maxBar == max);
-        srcImage.copyTo(cannyImage);
-        contoursImage.create(cannyImage.size(), CV_8UC3);
-        makeWindow("Canny Edges",      cannyImage);
-        makeWindow("Canny Mask", cannyImage);
-        makeWindow("Contours",   contoursImage);
-        makeTrackbar("Threshold:", "Canny Edges", &thresholdBar,  maxBar);
-        makeTrackbar("Threshold:", "Canny Mask",  &thresholdBar,  maxBar);
-        makeTrackbar("Threshold:", "Contours",    &thresholdBar,  maxBar);
+        makeWindow("Original", srcImage, 2);
+        makeWindow("Hulls",    hullsImage);
+        makeTrackbar("Threshold:", "Original", &thresholdBar, maxBar);
+        makeTrackbar("Threshold:", "Hulls",    &thresholdBar, maxBar);
+        cv::imshow("Original", srcImage);
     }
 };
 
@@ -161,9 +169,6 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
-            makeWindow("Original", image, 2);
-            cv::imshow("Original", image);
-            cv::createTrackbar("for alignment only", "Original", 0, 0, 0, 0);
             DemoDisplay demo(image); demo();
             cv::waitKey(0);
             return 0;
