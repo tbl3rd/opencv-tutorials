@@ -54,6 +54,24 @@ static void makeWindow(const char *window, cv::Size size, int reset = 0)
     maxY = std::max(maxY, size.height);
 }
 
+// Return image with elements converted to float.
+//
+static cv::Mat floatImage(const cv::Mat &image)
+{
+    cv::Mat result;
+    image.convertTo(result, CV_32F);
+    return result;
+}
+
+// Return image multiplied by itself.
+//
+static cv::Mat square(const cv::Mat &image)
+{
+    cv::Mat result;
+    image.copyTo(result);
+    return result.mul(result);
+}
+
 // Return the PSNR between image1 and image1 or 0.0 if below epsilon.
 //
 static double getPsnr(const cv::Mat &image1, const cv::Mat &image2)
@@ -76,20 +94,8 @@ static double getPsnr(const cv::Mat &image1, const cv::Mat &image2)
     return result;
 }
 
-static cv::Mat floatImage(const cv::Mat &image)
-{
-    cv::Mat result;
-    image.convertTo(result, CV_32F);
-    return result;
-}
-
-static cv::Mat square(const cv::Mat &image)
-{
-    cv::Mat result;
-    image.copyTo(result);
-    return result.mul(result);
-}
-
+// Return image blurred with kernel and sigmaX.
+//
 static cv::Mat blur(const cv::Mat &image)
 {
     static const cv::Size kernel(11, 11);
@@ -101,47 +107,36 @@ static cv::Mat blur(const cv::Mat &image)
 
 // Return the MSSIM calculated over image1 and image2.
 //
+// numerator   = ((2 * mu1 * mu2 + C1) * (2 * sigma1 * sigma2 + C2))
+// denominator = ((square(mu1) + square(mu2) + C1)
+//             * (square(sigma1) + square(sigma2) + C2))
+// mssim = mean(numerator /denominator)
+//
 static cv::Scalar getMssim(const cv::Mat &image1, const cv::Mat &image2)
 {
-    const cv::Mat float1 = floatImage(image1);
-    const cv::Mat float2 = floatImage(image2);
-    const cv::Mat float2squared = square(float2); // float2^2
-    const cv::Mat float1squared = square(float1); // float1^2
-    const cv::Mat float_1_x_2   = float1.mul(float2); // float1 * float2
-    const cv::Mat mu1 = blur(float1);
-    const cv::Mat mu2 = blur(float2);
-    const cv::Mat mu1squared = square(mu1);
-    const cv::Mat mu2squared = square(mu2);
-    const cv::Mat mu1_x_mu2  = mu1.mul(mu2);
-    const cv::Mat sigma1squared = blur(float1squared);
-    const cv::Mat sigma2squared = blur(float2squared);
-    const cv::Mat sigma_1_x_2   = blur(float_1_x_2);
-    sigma1squared -= mu1squared;
-    sigma2squared -= mu2squared;
-    sigma_1_x_2 -= mu1_x_mu2;
-
-    // t3 = ((2 * mu1_x_mu2 + C1) * (2 * sigma_1_x_2 + C2))
-    // t1 = ((mu1squared + mu2squared + C1)
-    //    * (sigma1squared + sigma2squared + C2))
-    // ssimMap =  t3 / t1;
-    //
-    static const double C1 =  6.5025;
-    static const double C2 = 58.5225;
-    cv::Mat t1 = 2 * mu1_x_mu2 + C1;
-    cv::Mat t2 = 2 * sigma_1_x_2  + C2;
-    cv::Mat t3 = t1.mul(t2);
-    t1 = mu1squared    + mu2squared    + C1;
-    t2 = sigma1squared + sigma2squared + C2;
-    t1 = t1.mul(t2);
+    static const double C1        = 6.5025;
+    static const double C2        = 58.5225;
+    const cv::Mat float1          = floatImage(image1);
+    const cv::Mat float2          = floatImage(image2);
+    const cv::Mat mu1             = blur(float1);
+    const cv::Mat mu2             = blur(float2);
+    const cv::Mat mu1squared      = square(mu1);
+    const cv::Mat mu2squared      = square(mu2);
+    const cv::Mat mu1_x_mu2       = mu1.mul(mu2);
+    const cv::Mat sigma1squared   = blur(square(float1))     - mu1squared;
+    const cv::Mat sigma2squared   = blur(square(float2))     - mu2squared;
+    const cv::Mat sigma1_x_sigma2 = blur(float1.mul(float2)) - mu1_x_mu2;
+    const cv::Mat numerator1      = 2 * mu1_x_mu2       + C1;
+    const cv::Mat numerator2      = 2 * sigma1_x_sigma2 + C2;
+    const cv::Mat numerator       = numerator1.mul(numerator2);
+    const cv::Mat denominator1    = mu1squared    + mu2squared    + C1;
+    const cv::Mat denominator2    = sigma1squared + sigma2squared + C2;
+    const cv::Mat denominator     = denominator1.mul(denominator2);
     cv::Mat ssimMap;
-    cv::divide(t3, t1, ssimMap);
-
-    // mssim = average of ssim map
-    //
+    cv::divide(numerator, denominator, ssimMap);
     const cv::Scalar result = cv::mean(ssimMap);
     return result;
 }
-
 
 // Just cv::VideoCapture extended for convenience.
 //
