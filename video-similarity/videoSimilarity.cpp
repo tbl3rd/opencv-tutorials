@@ -76,39 +76,51 @@ static double getPsnr(const cv::Mat &image1, const cv::Mat &image2)
     return result;
 }
 
+static cv::Mat floatImage(const cv::Mat &image)
+{
+    cv::Mat result;
+    image.convertTo(result, CV_32F);
+    return result;
+}
+
+static cv::Mat square(const cv::Mat &image)
+{
+    cv::Mat result;
+    image.copyTo(result);
+    return result.mul(result);
+}
+
+static cv::Mat blur(const cv::Mat &image)
+{
+    static const cv::Size kernel(11, 11);
+    static const double sigmaX = 1.5;
+    cv::Mat result;
+    cv::GaussianBlur(image, result, kernel, sigmaX);
+    return result;
+}
+
 // Return the MSSIM calculated over image1 and image2.
 //
 static cv::Scalar getMssim(const cv::Mat &image1, const cv::Mat &image2)
 {
-    cv::Mat float1;
-    cv::Mat float2;
-    image1.convertTo(float1, CV_32F);
-    image2.convertTo(float2, CV_32F);
-    const cv::Mat float2squared = float2.mul(float2); // float2^2
-    const cv::Mat float1squared = float1.mul(float1); // float1^2
-    const cv::Mat float1x2      = float1.mul(float2); // float1 * float2
-
-    static const cv::Size kernel(11, 11);
-    static const double sigmaX = 1.5;
-    cv::Mat mu1;
-    cv::Mat mu2;
-    cv::GaussianBlur(float1, mu1, kernel, sigmaX);
-    cv::GaussianBlur(float2, mu2, kernel, sigmaX);
-    const cv::Mat mu1squared = mu1.mul(mu1);
-    const cv::Mat mu2squared = mu2.mul(mu2);
+    const cv::Mat float1 = floatImage(image1);
+    const cv::Mat float2 = floatImage(image2);
+    const cv::Mat float2squared = square(float2); // float2^2
+    const cv::Mat float1squared = square(float1); // float1^2
+    const cv::Mat float_1_x_2   = float1.mul(float2); // float1 * float2
+    const cv::Mat mu1 = blur(float1);
+    const cv::Mat mu2 = blur(float2);
+    const cv::Mat mu1squared = square(mu1);
+    const cv::Mat mu2squared = square(mu2);
     const cv::Mat mu1_x_mu2  = mu1.mul(mu2);
-
-    cv::Mat sigma1squared;
-    cv::Mat sigma2squared;
-    cv::Mat sigma1x2;
-    cv::GaussianBlur(float1squared, sigma1squared, kernel, sigmaX);
-    cv::GaussianBlur(float2squared, sigma2squared, kernel, sigmaX);
-    cv::GaussianBlur(float1x2, sigma1x2, kernel, sigmaX);
+    const cv::Mat sigma1squared = blur(float1squared);
+    const cv::Mat sigma2squared = blur(float2squared);
+    const cv::Mat sigma_1_x_2   = blur(float_1_x_2);
     sigma1squared -= mu1squared;
     sigma2squared -= mu2squared;
-    sigma1x2 -= mu1_x_mu2;
+    sigma_1_x_2 -= mu1_x_mu2;
 
-    // t3 = ((2 * mu1_x_mu2 + C1) * (2 * sigma1x2 + C2))
+    // t3 = ((2 * mu1_x_mu2 + C1) * (2 * sigma_1_x_2 + C2))
     // t1 = ((mu1squared + mu2squared + C1)
     //    * (sigma1squared + sigma2squared + C2))
     // ssimMap =  t3 / t1;
@@ -116,7 +128,7 @@ static cv::Scalar getMssim(const cv::Mat &image1, const cv::Mat &image2)
     static const double C1 =  6.5025;
     static const double C2 = 58.5225;
     cv::Mat t1 = 2 * mu1_x_mu2 + C1;
-    cv::Mat t2 = 2 * sigma1x2  + C2;
+    cv::Mat t2 = 2 * sigma_1_x_2  + C2;
     cv::Mat t3 = t1.mul(t2);
     t1 = mu1squared    + mu2squared    + C1;
     t2 = sigma1squared + sigma2squared + C2;
@@ -134,10 +146,10 @@ static cv::Scalar getMssim(const cv::Mat &image1, const cv::Mat &image2)
 // Just cv::VideoCapture extended for convenience.
 //
 struct CvVideoCapture: cv::VideoCapture {
-    int count(void) {
+    int count() {
         return this->get(CV_CAP_PROP_FRAME_COUNT);
     }
-    cv::Size size(void) {
+    cv::Size size() {
         const int w = this->get(CV_CAP_PROP_FRAME_WIDTH);
         const int h = this->get(CV_CAP_PROP_FRAME_HEIGHT);
         const cv::Size result(w, h);
@@ -147,7 +159,7 @@ struct CvVideoCapture: cv::VideoCapture {
 };
 
 
-// Format these nicely on an ostream.
+// Format PSNR and SSIM nicely on an ostream.
 //
 #define DECIBEL(PSNR) std::setiosflags(std::ios::fixed)         \
     << std::setw(8) << std::setprecision(3) << (PSNR) << " dB"
@@ -165,7 +177,7 @@ static void compareVideos(CvVideoCapture &reference, CvVideoCapture &test,
     const int count = std::min(reference.count(), test.count());
     makeWindow("Reference", size, 2);
     makeWindow("Test", size);
-    for (int i = 0; i < reference.count(); ++i) {
+    for (int i = 0; i < count; ++i) {
         std::cout << "Frame " << std::setw(3) << i << ": ";
         cv::Mat rFrame, tFrame; reference >> rFrame; test >> tFrame;
         if (rFrame.empty() || tFrame.empty()) {
