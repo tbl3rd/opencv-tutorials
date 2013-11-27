@@ -74,7 +74,7 @@ static cv::Mat square(const cv::Mat &image)
 
 // Return saturate(|image1 - image2|).
 //
-static cv::Mat satAbsDiff(const cv::Mat &image1, const cv::Mat &image2)
+static cv::Mat absDiff(const cv::Mat &image1, const cv::Mat &image2)
 {
     cv::Mat result;
     cv::absdiff(image1, image2, result);
@@ -83,22 +83,30 @@ static cv::Mat satAbsDiff(const cv::Mat &image1, const cv::Mat &image2)
 
 // Return the PSNR between image1 and image1 or 0.0 if below epsilon.
 //
+// Sum of squares of the absolute difference between two images averaged
+// over the number of pixels and channels in the images -- expressed as
+// the common log of the ratio of the maximum pixel value to the average.
+//
+// sumSquared = sumOverChannels(sumOverPixels(square(|image1 - image2|)))
+// meanSquared = sumSquared / channelCount / pixelCount
+// psnr = 10 * log(maxSquared / meanSquared)
+//
 static double getPsnr(const cv::Mat &image1, const cv::Mat &image2)
 {
     static const int max = std::numeric_limits<uchar>::max();
     static const double maxSquared = max * max;
     static const double epsilon    = 1e-10;
-    const cv::Mat intDiff = satAbsDiff(image1, image2);
-    const cv::Mat diff = floatImage(intDiff);
-    const cv::Mat diffSquared = square(diff);
-    const cv::Scalar sum = cv::sum(diffSquared);
-    const double sse = sum.val[0] + sum.val[1] + sum.val[2];
-    double result = 0;
-    if (sse > epsilon) {
-        const double mse = sse / image1.channels() / image1.total();
-        result = 10.0 * log10(maxSquared / mse);
+    const int channelCount = image1.channels();
+    const int pixelCount = image1.total();
+    const cv::Mat diff = absDiff(floatImage(image1), floatImage(image2));
+    const cv::Scalar sumPixels = cv::sum(square(diff));
+    double sumSquared = 0.0;
+    for (int i = 0; i < channelCount; ++i) sumSquared += sumPixels.val[i];
+    if (sumSquared > epsilon) {
+        const double meanSquared = sumSquared / channelCount / pixelCount;
+        return 10.0 * log10(maxSquared / meanSquared);
     }
-    return result;
+    return 0.0;
 }
 
 // Return image blurred with kernel and sigmaX.

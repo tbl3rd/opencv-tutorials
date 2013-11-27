@@ -6,7 +6,7 @@ CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := videoSimilarity
-ARGS := ../resources/Megamind.avi ../resources/Megamind_bugy.avi 35 10
+ARGS := ../resources/Megamind.avi ../resources/Megamind_bugy.avi 35 5
 
 main: $(EXECUTABLE)
 
