@@ -63,13 +63,22 @@ static cv::Mat floatImage(const cv::Mat &image)
     return result;
 }
 
-// Return image multiplied by itself.
+// Return copy of image multiplied by itself.
 //
 static cv::Mat square(const cv::Mat &image)
 {
     cv::Mat result;
     image.copyTo(result);
     return result.mul(result);
+}
+
+// Return saturate(|image1 - image2|).
+//
+static cv::Mat satAbsDiff(const cv::Mat &image1, const cv::Mat &image2)
+{
+    cv::Mat result;
+    cv::absdiff(image1, image2, result);
+    return result;
 }
 
 // Return the PSNR between image1 and image1 or 0.0 if below epsilon.
@@ -79,14 +88,12 @@ static double getPsnr(const cv::Mat &image1, const cv::Mat &image2)
     static const int max = std::numeric_limits<uchar>::max();
     static const double maxSquared = max * max;
     static const double epsilon    = 1e-10;
-    double result = 0;                  // Return 0 for sse < epsilon.
-    cv::Mat intDiff;                    // |image1 - image2|
-    cv::Mat floatDiffSquared;           // |image1 - image2|^2
-    cv::absdiff(image1, image2, intDiff);
-    intDiff.convertTo(floatDiffSquared, CV_32F);
-    floatDiffSquared = floatDiffSquared.mul(floatDiffSquared);
-    const cv::Scalar sum = cv::sum(floatDiffSquared);
+    const cv::Mat intDiff = satAbsDiff(image1, image2);
+    const cv::Mat diff = floatImage(intDiff);
+    const cv::Mat diffSquared = square(diff);
+    const cv::Scalar sum = cv::sum(diffSquared);
     const double sse = sum.val[0] + sum.val[1] + sum.val[2];
+    double result = 0;
     if (sse > epsilon) {
         const double mse = sse / image1.channels() / image1.total();
         result = 10.0 * log10(maxSquared / mse);
