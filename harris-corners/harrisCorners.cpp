@@ -89,11 +89,11 @@ class DemoDisplay {
     const cv::Mat &apply(double threshold)
     {
         detectCorners(grayImage, normalizedCorners, scaledCorners);
-        const int rows = normalizedCorners.rows;
-        const int cols = normalizedCorners.cols;
-        for (int j = 0; j < rows ; ++j) {
-            for (int i = 0; i < cols; ++i) {
-                if ((int)normalizedCorners.at<float>(j,i) > threshold) {
+        const cv::Mat_<float> &normalized = normalizedCorners;
+        for (int j = 0; j < normalized.rows ; ++j) {
+            for (int i = 0; i < normalized.cols; ++i) {
+                const int value = normalized[j][i];
+                if (value > threshold) {
                     static const int radius = 5;
                     const cv::Point center(i, j);
                     drawCircle(scaledCorners, center, radius);
@@ -127,6 +127,8 @@ public:
     //
     void operator()(void) { DemoDisplay::showCorners(0, this); }
 
+    int threshold(void) { return bar; }
+
     // Find and display contours in image s.
     //
     DemoDisplay(const cv::Mat &s):
@@ -149,8 +151,16 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
+            std::cout << std::endl << av[0] << ": Press any key to quit."
+                      << std::endl << std::endl;
+            std::cout << av[0] << ": Useless below threshold 150."
+                      << std::endl << std::endl;
             DemoDisplay demo(image); demo();
+            std::cout << av[0] << ": Initial threshold is: "
+                      << demo.threshold()<< std::endl << std::endl;
             cv::waitKey(0);
+            std::cout << av[0] << ": Final threshold was: "
+                      << demo.threshold() << std::endl << std::endl;
             return 0;
         }
     }
