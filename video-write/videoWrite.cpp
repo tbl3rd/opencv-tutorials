@@ -52,14 +52,14 @@ struct CvVideoCapture: cv::VideoCapture {
     double framesPerSecond() {
         return this->get(CV_CAP_PROP_FPS);
     }
-    int codec() {
+    int fourCcCodec() {
         return this->get(CV_CAP_PROP_FOURCC);
     }
-    const char *codecString() {
+    const char *fourCcCodecString() {
         static int code = 0;
         static char result[5] = "";
         if (code == 0) {
-            code = this->codec();
+            code = this->fourCcCodec();
             result[0] = ((code & 0x000000ff) >>  0);
             result[1] = ((code & 0x0000ff00) >>  8);
             result[2] = ((code & 0x00ff0000) >> 16);
@@ -78,6 +78,7 @@ struct CvVideoCapture: cv::VideoCapture {
         return result;
     }
     CvVideoCapture(const std::string &fileName): VideoCapture(fileName) {}
+    CvVideoCapture(): VideoCapture() {}
 };
 
 int main(int ac, char *av[])
@@ -88,7 +89,7 @@ int main(int ac, char *av[])
         CvVideoCapture input(av[1]);
         bool ok = input.isOpened();
         if (ok) {
-            const int codec = input.codec();
+            const int codec = input.fourCcCodec();
             const double fps = input.framesPerSecond();
             const cv::Size frameSize = input.frameSize();
             for (int i = 0; i < COUNT; ++i) {
@@ -115,14 +116,47 @@ int main(int ac, char *av[])
             }
         }
         if (ok) {
+            const double fps = input.framesPerSecond();
             std::cout << std::endl << av[0] << ": Press any key to quit."
                       << std::endl << std::endl
-                      << input.frameCount() << " frames (W x H): "
+                      << input.frameCount() << " frames ("
                       << input.frameSize().width << " x "
                       << input.frameSize().height
-                      << " with codec " << input.codecString() << " at "
-                      << input.framesPerSecond() << " frames/second."
+                      << ") with codec " << input.fourCcCodecString()
+                      << " at " << fps << " frames/second."
                       << std::endl << std::endl;
+            struct {
+                const char *name; CvVideoCapture vc; cv::Mat frame;
+            } video[4] = {
+                { .name = "Source" },
+                { .name = "Blue"   },
+                { .name = "Green"  },
+                { .name = "Red"    }
+            };
+            const int videoCount = sizeof video / sizeof video[0];
+            for (int i = 0; ok && i < videoCount; ++i) {
+                video[i].vc.open(av[1 + i]);
+                ok = ok && video[i].vc.isOpened();
+            }
+            if (ok) {
+                for (int i = 0; ok && i < videoCount; ++i) {
+                    const char *name = video[i].name;
+                    const cv::Size size = video[i].vc.frameSize();
+                    makeWindow(name, size, i == 0? 2: 0);
+                }
+                const int msFrameDelay = 1.0 / fps * 1000;
+                while (ok) {
+                    for (int i = 0; ok && i < videoCount; ++i) {
+                        video[i].vc >> video[i].frame;
+                        ok = !video[i].frame.empty();
+                        if (ok) cv::imshow(video[i].name, video[i].frame);
+                    }
+                    if (ok) {
+                        const int c = cv::waitKey(msFrameDelay);
+                        ok = c == -1;
+                    }
+                }
+            }
             return 0;
         }
     }
