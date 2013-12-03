@@ -3,6 +3,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+
 static void showUsage(const char *av0)
 {
     std::cout << av0 << ": Extract, write, and display video color channels."
@@ -48,7 +49,7 @@ static void makeWindow(const char *window, cv::Size size, int reset = 0)
 // Just cv::VideoCapture extended for convenience.
 //
 struct CvVideoCapture: cv::VideoCapture {
-    int framesPerSecond() {
+    double framesPerSecond() {
         return this->get(CV_CAP_PROP_FPS);
     }
     int codec() {
@@ -88,7 +89,7 @@ int main(int ac, char *av[])
         bool ok = input.isOpened();
         if (ok) {
             const int codec = input.codec();
-            const int fps = input.framesPerSecond();
+            const double fps = input.framesPerSecond();
             const cv::Size frameSize = input.frameSize();
             for (int i = 0; i < COUNT; ++i) {
                 static const bool isColor = true;
@@ -119,6 +120,8 @@ int main(int ac, char *av[])
                       << input.frameCount() << " frames (W x H): "
                       << input.frameSize().width << " x "
                       << input.frameSize().height
+                      << " with codec " << input.codecString() << " at "
+                      << input.framesPerSecond() << " frames/second."
                       << std::endl << std::endl;
             return 0;
         }
