@@ -22,8 +22,12 @@ static void showUsage(const char *av0)
               << std::endl;
 }
 
+// Features in a goal image matched to a scene image.
+//
 typedef std::vector<cv::DMatch> Matches;
 
+// The keypoints and descriptors for features in goal or scene image i.
+//
 struct Features {
     const cv::Mat image;
     std::vector<cv::KeyPoint> keyPoints;
@@ -62,8 +66,8 @@ static Matches goodMatches(const Matches &matches)
         if (dist < minDist) minDist = dist;
         if (dist > maxDist) maxDist = dist;
     }
-    std::cout << "Minimum distance: " << minDist << std::endl;
-    std::cout << "Maximum distance: " << maxDist << std::endl;
+    std::cout << "Minimum distance: " << minDist << std::endl
+              << "Maximum distance: " << maxDist << std::endl;
     Matches result;
     for (int i = 0; i < matches.size(); ++i) {
         const double threshold = std::max(2 * minDist, epsilon);
@@ -81,10 +85,12 @@ static cv::Mat drawMatches(Features &goal, Features &scene,
 {
     static const cv::Scalar color = cv::Scalar::all(-1);
     static const std::vector<char> noMask;
-    static const int noSingles = cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS;
+    static const int flags
+        = cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS
+        | cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS;
     cv::Mat result;
     cv::drawMatches(goal.image, goal.keyPoints, scene.image, scene.keyPoints,
-                    matches, result, color, color, noMask, noSingles);
+                    matches, result, color, color, noMask, flags);
     return result;
 }
 
@@ -104,10 +110,10 @@ int main(int ac, char *av[])
             cv::imshow(ss.str(), image);
             std::cout << std::endl;
             for (int i = 0; i < count; ++i) {
-                std::cout << "Match"       << std::setw(2) << i << ": "
-                          << "Keypoint 1:" << std::setw(4) << good[i].queryIdx
+                std::cout << "Match"  << std::setw(2) << i << ": "
+                          << "Goal:"  << std::setw(4) << good[i].queryIdx
                           << ", "
-                          << "Keypoint 2:" << std::setw(4) << good[i].trainIdx
+                          << "Scene:" << std::setw(4) << good[i].trainIdx
                           << std::endl;
             }
             cv::waitKey(0);
