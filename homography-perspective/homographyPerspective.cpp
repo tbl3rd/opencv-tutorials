@@ -1,14 +1,16 @@
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 
 static void showUsage(const char *av0)
 {
-    std::cerr << av0 << ": Use homography and a perspective transform "
-              << "to locate an object in a scene." << std::endl
+    std::string av0colon(av0);
+    const int width = av0colon.append(": ").size();
+    std::cerr << av0colon << "Use homography and a perspective transform "
+              << std::endl << std::setw(width) << ""
+              << "to locate and outline an object in a scene." << std::endl
               << std::endl
               << "Usage: " << av0 << " <goal> <scene>" << std::endl
               << std::endl
@@ -113,11 +115,11 @@ static std::vector<cv::Point2f> findCorners(Features &goal, Features &scene,
     const cv::Mat homography = findHomography(goal, scene, matches);
     const int x = goal.image.size().width;
     const int y = goal.image.size().height;
-    std::vector<cv::Point2f> corners(4);
-    corners[0] = cv::Point2f(0, 0);
-    corners[1] = cv::Point2f(x, 0);
-    corners[2] = cv::Point2f(x, y);
-    corners[3] = cv::Point2f(0, y);
+    std::vector<cv::Point2f> corners;
+    corners.push_back(cv::Point2f(0, 0));
+    corners.push_back(cv::Point2f(x, 0));
+    corners.push_back(cv::Point2f(x, y));
+    corners.push_back(cv::Point2f(0, y));
     std::vector<cv::Point2f> result(corners.size());
     cv::perspectiveTransform(corners, result, homography);
     const cv::Point2f offset(x, 0);
