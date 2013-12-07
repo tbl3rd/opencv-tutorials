@@ -1,14 +1,15 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 
-
 static void showUsage(const char *av0)
 {
-    std::cerr << av0 << ": Demonstrate FLANN-based feature matching."
-              << std::endl << std::endl
+    std::cerr << av0 << ": Use homography and a perspective transform "
+              << "to locate an object in a scene." << std::endl
+              << std::endl
               << "Usage: " << av0 << " <goal> <scene>" << std::endl
               << std::endl
               << "Where: <goal> and <scene> are image files." << std::endl
@@ -31,6 +32,7 @@ struct Features {
     const cv::Mat image;
     std::vector<cv::KeyPoint> keyPoints;
     cv::Mat descriptors;
+    std::vector<cv::Point2f> locations;
     Features(const cv::Mat &i): image(i) {}
 };
 
@@ -52,13 +54,10 @@ static Matches matchFeatures(Features &goal, Features &scene)
 }
 
 // Return only good matches in matches.  A good match has distance less
-// than twice the minimum distance (or epsilon).
-//
-// Another option for this filter is cv::radiusMatch().
+// than thrice the minimum distance.
 //
 static Matches goodMatches(const Matches &matches)
 {
-    static const double epsilon = 0.02;
     double minDist = 100.0, maxDist = 0.0;
     for (int i = 0; i < matches.size(); ++i) {
         const double dist = matches[i].distance;
@@ -67,10 +66,10 @@ static Matches goodMatches(const Matches &matches)
     }
     std::cout << "Minimum distance: " << minDist << std::endl
               << "Maximum distance: " << maxDist << std::endl;
-    const double threshold = std::max(2 * minDist, epsilon);
+    const double threshold = 3 * minDist;
     Matches result;
     for (int i = 0; i < matches.size(); ++i) {
-        if (matches[i].distance <= threshold) result.push_back(matches[i]);
+        if (matches[i].distance < threshold) result.push_back(matches[i]);
     }
     return result;
 }
@@ -91,6 +90,41 @@ static cv::Mat drawMatches(Features &goal, Features &scene,
     return result;
 }
 
+// Find the best homography between the goal image and the scene image
+// based on the features in matches.
+//
+static cv::Mat findHomography(Features &goal, Features &scene,
+                              const Matches &matches)
+{
+    for (int i = 0; i < matches.size(); ++i) {
+        const cv::DMatch &m = matches[i];
+        goal.locations.push_back(goal.keyPoints[m.queryIdx].pt);
+        scene.locations.push_back(scene.keyPoints[m.trainIdx].pt);
+    }
+    return cv::findHomography(goal.locations, scene.locations, cv::RANSAC);
+}
+
+// Use homography to map corners of the goal object to corners in the scene
+// based on the features in matches.
+//
+static std::vector<cv::Point2f> findCorners(Features &goal, Features &scene,
+                                            const Matches &matches)
+{
+    const cv::Mat homography = findHomography(goal, scene, matches);
+    const int x = goal.image.size().width;
+    const int y = goal.image.size().height;
+    std::vector<cv::Point2f> corners(4);
+    corners[0] = cv::Point2f(0, 0);
+    corners[1] = cv::Point2f(x, 0);
+    corners[2] = cv::Point2f(x, y);
+    corners[3] = cv::Point2f(0, y);
+    std::vector<cv::Point2f> result(corners.size());
+    cv::perspectiveTransform(corners, result, homography);
+    const cv::Point2f offset(x, 0);
+    for (int i = 0; i < result.size(); ++i) result[i] += offset;
+    return result;
+}
+
 int main(int ac, char *av[])
 {
     if (ac == 3) {
@@ -101,18 +135,16 @@ int main(int ac, char *av[])
                       << std::endl << std::endl;
             const Matches matches = matchFeatures(goal, scene);
             const Matches good = goodMatches(matches);
-            const cv::Mat image = drawMatches(goal, scene, good);
-            const int count = good.size();
-            std::stringstream ss; ss << count << " Good Matches" << std::ends;
-            cv::imshow(ss.str(), image);
-            std::cout << std::endl;
-            for (int i = 0; i < count; ++i) {
-                std::cout << "Match"  << std::setw(2) << i << ": "
-                          << "Goal:"  << std::setw(4) << good[i].queryIdx
-                          << ", "
-                          << "Scene:" << std::setw(4) << good[i].trainIdx
-                          << std::endl;
-            }
+            cv::Mat image = drawMatches(goal, scene, good);
+            const std::vector<cv::Point2f> corner
+                = findCorners(goal, scene, good);
+            static const cv::Scalar green(0, 255, 0);
+            static const int thickness = 4;
+            cv::line(image, corner[0], corner[1], green, thickness);
+            cv::line(image, corner[1], corner[2], green, thickness);
+            cv::line(image, corner[2], corner[3], green, thickness);
+            cv::line(image, corner[3], corner[0], green, thickness);
+            cv::imshow("Good Matches & Object detection", image);
             cv::waitKey(0);
             return 0;
         }
