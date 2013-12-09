@@ -12,6 +12,11 @@ CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := cascadeClassify
+ARGS := \
+0 \
+./haarcascade_frontalface_alt.xml \
+./haarcascade_eye_tree_eyeglasses.xml \
+#
 
 main: $(EXECUTABLE)
 
@@ -20,13 +25,13 @@ help: main
 
 test: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	./$(EXECUTABLE) $(IMAGEFILES)
+	./$(EXECUTABLE) $(ARGS)
 
 clean:
 	rm -rf $(EXECUTABLE) *.dSYM
 
 debug: main
 	DYLD_LIBRARY_PATH=$(INSTALL)/lib:$$DYLD_LIBRARY_PATH \
-	lldb ./$(EXECUTABLE) -- $(IMAGEFILES)
+	lldb ./$(EXECUTABLE) -- $(ARGS)
 
 .PHONY: main help test clean debug

@@ -1,8 +1,25 @@
 #include <iostream>
+#include <sstream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 
+
+static void showUsage(const char *av0)
+{
+    static const char faces[] = "./haarcascade_frontalface_alt.xml";
+    static const char eyes[] = "./haarcascade_eye_tree_eyeglasses.xml";
+    std::cerr << av0 << ": Use Haar cascade classifier to find faces."
+              << std::endl
+              << "Usage: " << av0 << " <camera> <faces> <eyes>" << std::endl
+              << std::endl
+              << "Where: <camera> is an integer camera number." << std::endl
+              << "       <faces> is Haar training data for faces." << std::endl
+              << "       <eyes>  is Haar training data for eyes." << std::endl
+              << std::endl
+              << "Example: " << av0 << " 0 " << faces << " " << eyes
+              << std::endl << std::endl;
+}
 
 // Return an equalized grayscale copy of image.
 //
@@ -13,7 +30,7 @@ static cv::Mat grayScale(const cv::Mat &image) {
     return result;
 }
 
-static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &cc,
+static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
                                            const cv::Mat &gray)
 {
     static double scaleFactor = 1.1;
@@ -21,8 +38,8 @@ static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &cc,
     static const cv::Size minSize(30, 30);
     static const cv::Size maxSize;
     std::vector<cv::Rect> result;
-    cc.detectMultiScale(gray, result, scaleFactor, minNeighbors,
-                        CV_HAAR_SCALE_IMAGE, minSize, maxSize);
+    classifier.detectMultiScale(gray, result, scaleFactor, minNeighbors,
+                                CV_HAAR_SCALE_IMAGE, minSize, maxSize);
     return result;
 }
 
@@ -52,42 +69,86 @@ static void drawFace(cv::Mat &frame, const cv::Rect &face,
 
 }
 
-static void detectAndDisplayFace(cv::Mat &frame,
-                                 cv::CascadeClassifier &faceCascade,
-                                 cv::CascadeClassifier &eyesCascade)
+static void displayFace(cv::Mat &frame,
+                        cv::CascadeClassifier &faceHaar,
+                        cv::CascadeClassifier &eyesHaar)
 
 {
     const cv::Mat gray = grayScale(frame);
-    const std::vector<cv::Rect> faces = detectCascade(faceCascade, gray);
+    const std::vector<cv::Rect> faces = detectCascade(faceHaar, gray);
     for (size_t i = 0; i < faces.size(); ++i) {
         const cv::Mat faceROI = gray(faces[i]);
-        const std::vector<cv::Rect> eyes = detectCascade(eyesCascade, faceROI);
+        const std::vector<cv::Rect> eyes = detectCascade(eyesHaar, faceROI);
         drawFace(frame, faces[i], eyes);
     }
     cv::imshow("Capture - Face detection", frame);
 }
 
+
+// Just cv::VideoCapture extended for convenience.
+//
+struct CvVideoCapture: cv::VideoCapture {
+    double framesPerSecond() {
+        const double fps = this->get(CV_CAP_PROP_FPS);
+        return fps ? fps : 30.0;        // for MacBook iSight camera
+    }
+    int fourCcCodec() {
+        return this->get(CV_CAP_PROP_FOURCC);
+    }
+    const char *fourCcCodecString() {
+        static int code = 0;
+        static char result[5] = "";
+        if (code == 0) {
+            code = this->fourCcCodec();
+            result[0] = ((code & 0x000000ff) >>  0);
+            result[1] = ((code & 0x0000ff00) >>  8);
+            result[2] = ((code & 0x00ff0000) >> 16);
+            result[3] = ((code & 0xff000000) >> 24);
+            result[4] = ""[0];
+        }
+        return result;
+    }
+    int frameCount() {
+        return this->get(CV_CAP_PROP_FRAME_COUNT);
+    }
+    cv::Size frameSize() {
+        const int w = this->get(CV_CAP_PROP_FRAME_WIDTH);
+        const int h = this->get(CV_CAP_PROP_FRAME_HEIGHT);
+        const cv::Size result(w, h);
+        return result;
+    }
+    CvVideoCapture(const std::string &fileName): VideoCapture(fileName) {}
+    CvVideoCapture(int n): VideoCapture(n) {}
+    CvVideoCapture(): VideoCapture() {}
+};
+
+
 int main(int ac, const char *av[])
 {
-    cv::CascadeClassifier faceCascade("haarcascade_frontalface_alt.xml");
-    cv::CascadeClassifier eyesCascade("haarcascade_eye_tree_eyeglasses.xml");
-    if (!faceCascade.empty() && ! eyesCascade.empty()) {
-        CvCapture *const capture = cvCaptureFromCAM(-1);
-        if (capture) {
+    if (ac == 4) {
+        int cameraId = 0;
+        std::istringstream iss(av[1]); iss >> cameraId;
+        cv::CascadeClassifier faceHaar(av[2]);
+        cv::CascadeClassifier eyesHaar(av[3]);
+        std::cout << av[0] << ": camera ID " << cameraId << std::endl
+                  << av[0] << ": Face data from " << av[2] << std::endl
+                  << av[0] << ": Eyes data from " << av[3] << std::endl;
+        if (!faceHaar.empty() && ! eyesHaar.empty()) {
+            CvVideoCapture camera(cameraId);
+            std::cout << std::endl << av[0] << ": Press any key to quit."
+                      << std::endl << std::endl;
+            const int msPerFrame = 1000.0 / camera.framesPerSecond();
             while (true) {
-                cv::Mat frame = cvQueryFrame(capture);
-                if (frame.empty())  {
-                    std::cout << "No frame." << std::endl;
-                } else {
-                    detectAndDisplayFace(frame, faceCascade, eyesCascade);
+                cv::Mat frame; camera >> frame;
+                if (!frame.empty()) {
+                    displayFace(frame, faceHaar, eyesHaar);
                 }
-                const int c = cv::waitKey(10);
+                const int c = cv::waitKey(msPerFrame);
                 if (c != -1) break;
             }
+            return 0;
         }
-        return 0;
     }
-    std::cerr << av[0] << ": Detect faces and eyes in live video." << std::endl
-              << "Usage: " << av[0] << std::endl;
+    showUsage(av[0]);
     return 1;
 }
