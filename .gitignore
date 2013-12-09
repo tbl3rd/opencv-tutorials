@@ -37,3 +37,4 @@
 /shi-tomasi-corners/shiTomasiCorners
 /flann-matching/flannMatcher
 /homography-perspective/homographyPerspective
+/cascade-classifier/cascadeClassify
