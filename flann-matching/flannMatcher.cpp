@@ -9,23 +9,23 @@ static void showUsage(const char *av0)
 {
     std::cerr << av0 << ": Demonstrate FLANN-based feature matching."
               << std::endl << std::endl
-              << "Usage: " << av0 << " <goal> <scene>" << std::endl
+              << "Usage: " << av0 << " <object> <scene>" << std::endl
               << std::endl
-              << "Where: <goal> and <scene> are image files." << std::endl
-              << "       <goal> has features present in <scene>." << std::endl
+              << "Where: <object> and <scene> are image files." << std::endl
+              << "       <object> has features present in <scene>." << std::endl
               << "       <scene> is where to search for features" << std::endl
-              << "               from the <goal> image." << std::endl
+              << "               from the <object> image." << std::endl
               << std::endl
               << "Example: " << av0 << " ../resources/box.png"
               << " ../resources/box_in_scene.png" << std::endl
               << std::endl;
 }
 
-// Features in a goal image matched to a scene image.
+// Features in a object image matched to a scene image.
 //
 typedef std::vector<cv::DMatch> Matches;
 
-// The keypoints and descriptors for features in goal or scene image i.
+// The keypoints and descriptors for features in object or scene image i.
 //
 struct Features {
     const cv::Mat image;
@@ -34,20 +34,20 @@ struct Features {
     Features(const cv::Mat &i): image(i) {}
 };
 
-// Return matches of goal in scene.
+// Return matches of object in scene.
 //
-static Matches matchFeatures(Features &goal, Features &scene)
+static Matches matchFeatures(Features &object, Features &scene)
 {
     static const int minHessian = 400;
     cv::SurfFeatureDetector detector(minHessian);
-    detector.detect(goal.image, goal.keyPoints);
+    detector.detect(object.image, object.keyPoints);
     detector.detect(scene.image, scene.keyPoints);
     cv::SurfDescriptorExtractor extractor;
-    extractor.compute(goal.image, goal.keyPoints, goal.descriptors);
+    extractor.compute(object.image, object.keyPoints, object.descriptors);
     extractor.compute(scene.image, scene.keyPoints, scene.descriptors);
     cv::FlannBasedMatcher matcher;
     Matches result;
-    matcher.match(goal.descriptors, scene.descriptors, result);
+    matcher.match(object.descriptors, scene.descriptors, result);
     return result;
 }
 
@@ -75,9 +75,9 @@ static Matches goodMatches(const Matches &matches)
     return result;
 }
 
-// Return image with matches drawn from goal to scene in random colors.
+// Return image with matches drawn from object to scene in random colors.
 //
-static cv::Mat drawMatches(Features &goal, Features &scene,
+static cv::Mat drawMatches(Features &object, Features &scene,
                            const Matches &matches)
 {
     static const cv::Scalar color = cv::Scalar::all(-1);
@@ -86,7 +86,8 @@ static cv::Mat drawMatches(Features &goal, Features &scene,
         = cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS
         | cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS;
     cv::Mat result;
-    cv::drawMatches(goal.image, goal.keyPoints, scene.image, scene.keyPoints,
+    cv::drawMatches(object.image, object.keyPoints,
+                    scene.image, scene.keyPoints,
                     matches, result, color, color, noMask, flags);
     return result;
 }
@@ -94,21 +95,21 @@ static cv::Mat drawMatches(Features &goal, Features &scene,
 int main(int ac, char *av[])
 {
     if (ac == 3) {
-        Features  goal(cv::imread(av[1], cv::IMREAD_GRAYSCALE));
+        Features  object(cv::imread(av[1], cv::IMREAD_GRAYSCALE));
         Features scene(cv::imread(av[2], cv::IMREAD_GRAYSCALE));
-        if (goal.image.data && scene.image.data) {
+        if (object.image.data && scene.image.data) {
             std::cout << std::endl << av[0] << ": Press any key to quit."
                       << std::endl << std::endl;
-            const Matches matches = matchFeatures(goal, scene);
+            const Matches matches = matchFeatures(object, scene);
             const Matches good = goodMatches(matches);
-            const cv::Mat image = drawMatches(goal, scene, good);
+            const cv::Mat image = drawMatches(object, scene, good);
             const int count = good.size();
             std::stringstream ss; ss << count << " Good Matches" << std::ends;
             cv::imshow(ss.str(), image);
             std::cout << std::endl;
             for (int i = 0; i < count; ++i) {
                 std::cout << "Match"  << std::setw(2) << i << ": "
-                          << "Goal:"  << std::setw(4) << good[i].queryIdx
+                          << "Object:"  << std::setw(4) << good[i].queryIdx
                           << ", "
                           << "Scene:" << std::setw(4) << good[i].trainIdx
                           << std::endl;

@@ -12,23 +12,23 @@ static void showUsage(const char *av0)
               << std::endl << std::setw(width) << ""
               << "to locate and outline an object in a scene." << std::endl
               << std::endl
-              << "Usage: " << av0 << " <goal> <scene>" << std::endl
+              << "Usage: " << av0 << " <object> <scene>" << std::endl
               << std::endl
-              << "Where: <goal> and <scene> are image files." << std::endl
-              << "       <goal> has features present in <scene>." << std::endl
+              << "Where: <object> and <scene> are image files." << std::endl
+              << "       <object> has features present in <scene>." << std::endl
               << "       <scene> is where to search for features" << std::endl
-              << "               from the <goal> image." << std::endl
+              << "               from the <object> image." << std::endl
               << std::endl
               << "Example: " << av0 << " ../resources/box.png"
               << " ../resources/box_in_scene.png" << std::endl
               << std::endl;
 }
 
-// Features in a goal image matched to a scene image.
+// Features in a object image matched to a scene image.
 //
 typedef std::vector<cv::DMatch> Matches;
 
-// The keypoints and descriptors for features in goal or scene image i.
+// The keypoints and descriptors for features in object or scene image i.
 //
 struct Features {
     const cv::Mat image;
@@ -38,20 +38,20 @@ struct Features {
     Features(const cv::Mat &i): image(i) {}
 };
 
-// Return matches of goal in scene.
+// Return matches of object in scene.
 //
-static Matches matchFeatures(Features &goal, Features &scene)
+static Matches matchFeatures(Features &object, Features &scene)
 {
     static const int minHessian = 400;
     cv::SurfFeatureDetector detector(minHessian);
-    detector.detect(goal.image, goal.keyPoints);
+    detector.detect(object.image, object.keyPoints);
     detector.detect(scene.image, scene.keyPoints);
     cv::SurfDescriptorExtractor extractor;
-    extractor.compute(goal.image, goal.keyPoints, goal.descriptors);
+    extractor.compute(object.image, object.keyPoints, object.descriptors);
     extractor.compute(scene.image, scene.keyPoints, scene.descriptors);
     cv::FlannBasedMatcher matcher;
     Matches result;
-    matcher.match(goal.descriptors, scene.descriptors, result);
+    matcher.match(object.descriptors, scene.descriptors, result);
     return result;
 }
 
@@ -76,9 +76,9 @@ static Matches goodMatches(const Matches &matches)
     return result;
 }
 
-// Return image with matches drawn from goal to scene in random colors.
+// Return image with matches drawn from object to scene in random colors.
 //
-static cv::Mat drawMatches(Features &goal, Features &scene,
+static cv::Mat drawMatches(Features &object, Features &scene,
                            const Matches &matches)
 {
     static const cv::Scalar color = cv::Scalar::all(-1);
@@ -87,34 +87,35 @@ static cv::Mat drawMatches(Features &goal, Features &scene,
         = cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS
         | cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS;
     cv::Mat result;
-    cv::drawMatches(goal.image, goal.keyPoints, scene.image, scene.keyPoints,
+    cv::drawMatches(object.image, object.keyPoints,
+                    scene.image, scene.keyPoints,
                     matches, result, color, color, noMask, flags);
     return result;
 }
 
-// Find the best homography between the goal image and the scene image
+// Find the best homography between the object image and the scene image
 // based on the features in matches.
 //
-static cv::Mat findHomography(Features &goal, Features &scene,
+static cv::Mat findHomography(Features &object, Features &scene,
                               const Matches &matches)
 {
     for (int i = 0; i < matches.size(); ++i) {
         const cv::DMatch &m = matches[i];
-        goal.locations.push_back(goal.keyPoints[m.queryIdx].pt);
+        object.locations.push_back(object.keyPoints[m.queryIdx].pt);
         scene.locations.push_back(scene.keyPoints[m.trainIdx].pt);
     }
-    return cv::findHomography(goal.locations, scene.locations, cv::RANSAC);
+    return cv::findHomography(object.locations, scene.locations, cv::RANSAC);
 }
 
-// Use homography to map corners of the goal object to corners in the scene
+// Use homography to map corners of the object object to corners in the scene
 // based on the features in matches.
 //
-static std::vector<cv::Point2f> findCorners(Features &goal, Features &scene,
+static std::vector<cv::Point2f> findCorners(Features &object, Features &scene,
                                             const Matches &matches)
 {
-    const cv::Mat homography = findHomography(goal, scene, matches);
-    const int x = goal.image.size().width;
-    const int y = goal.image.size().height;
+    const cv::Mat homography = findHomography(object, scene, matches);
+    const int x = object.image.size().width;
+    const int y = object.image.size().height;
     std::vector<cv::Point2f> corners;
     corners.push_back(cv::Point2f(0, 0));
     corners.push_back(cv::Point2f(x, 0));
@@ -130,16 +131,16 @@ static std::vector<cv::Point2f> findCorners(Features &goal, Features &scene,
 int main(int ac, char *av[])
 {
     if (ac == 3) {
-        Features  goal(cv::imread(av[1], cv::IMREAD_GRAYSCALE));
+        Features  object(cv::imread(av[1], cv::IMREAD_GRAYSCALE));
         Features scene(cv::imread(av[2], cv::IMREAD_GRAYSCALE));
-        if (goal.image.data && scene.image.data) {
+        if (object.image.data && scene.image.data) {
             std::cout << std::endl << av[0] << ": Press any key to quit."
                       << std::endl << std::endl;
-            const Matches matches = matchFeatures(goal, scene);
+            const Matches matches = matchFeatures(object, scene);
             const Matches good = goodMatches(matches);
-            cv::Mat image = drawMatches(goal, scene, good);
+            cv::Mat image = drawMatches(object, scene, good);
             const std::vector<cv::Point2f> corner
-                = findCorners(goal, scene, good);
+                = findCorners(object, scene, good);
             static const cv::Scalar green(0, 255, 0);
             static const int thickness = 4;
             cv::line(image, corner[0], corner[1], green, thickness);
