@@ -38,3 +38,4 @@
 /flann-matching/flannMatcher
 /homography-perspective/homographyPerspective
 /cascade-classifier/cascadeClassify
+/support-vector-machines/svm
