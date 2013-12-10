@@ -3,17 +3,6 @@
 #include <opencv2/ml/ml.hpp>
 
 
-static CvSVMParams makeSvmParams(void)
-{
-    const CvTermCriteria term_crit
-        = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
-    CvSVMParams result;
-    result.svm_type    = CvSVM::C_SVC;
-    result.kernel_type = CvSVM::LINEAR;
-    result.term_crit   = term_crit;
-    return result;
-}
-
 // Draw the count trainingData on image in its respective colors.
 //
 static void drawTrainingData(cv::Mat &image, int count,
@@ -29,9 +18,42 @@ static void drawTrainingData(cv::Mat &image, int count,
     }
 }
 
+// Draw in red circles on image the support vectors in svm.
+//
+static void drawSvm(cv::Mat &image, CvSVM &svm)
+{
+    static const int radius = 9;
+    static const cv::Scalar red(0, 0, 255);
+    static const int thickness = 4;
+    static const int lineType  = 8;
+    const int count = svm.get_support_vector_count();
+    std::cout << "count == " << count << std::endl;
+    for (int i = 0; i < count; ++i) {
+        const float *const v = svm.get_support_vector(i);
+        const cv::Point center(v[0], v[1]);
+        std::cout << i << ": center == " << center << std::endl;
+        cv::circle(image, center, radius, red, thickness, lineType);
+    }
+}
+
+// Train with LINEAR kernel Support Vector Classifier (C_SVC) with up to
+// 100 iterations to achieve an epsilon of 1e-6, whichever comes first.
+//
+static CvSVMParams makeSvmParams(void)
+{
+    static const int criteria = CV_TERMCRIT_ITER | CV_TERMCRIT_EPS;
+    static const int iterationCount = 100;
+    static const double epsilon = 1e-6;
+    CvSVMParams result;
+    result.svm_type    = CvSVM::C_SVC;
+    result.kernel_type = CvSVM::LINEAR;
+    result.term_crit   = cvTermCriteria(criteria, iterationCount, epsilon);
+    return result;
+}
+
 // Train svm on the count values in trainingData and labels, then draw on
-// image the partitions associated with each label value in green or blue
-// according to the resulting svm.
+// image the classifications associated with each label value in green
+// (1.0) or blue (-1.0) according to what the resulting svm predicts.
 //
 static void drawSvmRegions(cv::Mat &image, CvSVM &svm, int count,
                            float trainingData[][2], float labels[])
@@ -58,25 +80,7 @@ static void drawSvmRegions(cv::Mat &image, CvSVM &svm, int count,
     }
 }
 
-// Draw in red circles on image the support vectors in svm.
-//
-static void drawSvm(cv::Mat &image, CvSVM &svm)
-{
-    static const int radius = 9;
-    static const cv::Scalar red(0, 0, 255);
-    static const int thickness = 4;
-    static const int lineType  = 8;
-    const int count = svm.get_support_vector_count();
-    std::cout << "count == " << count << std::endl;
-    for (int i = 0; i < count; ++i) {
-        const float *const v = svm.get_support_vector(i);
-        const cv::Point center(v[0], v[1]);
-        std::cout << i << ": center == " << center << std::endl;
-        cv::circle(image, center, radius, red, thickness, lineType);
-    }
-}
-
-// Show positive label values with black and negative values with white.
+// Show positive label values in black and negative values in white.
 //
 int main(int ac, const char *av[])
 {
