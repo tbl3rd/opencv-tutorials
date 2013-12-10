@@ -3,45 +3,52 @@
 #include <opencv2/ml/ml.hpp>
 
 
-static CvSVMParams makeSvmParams(int svm_type, int kernel_type,
-                                 CvTermCriteria term_crit)
+static CvSVMParams makeSvmParams(void)
 {
+    const CvTermCriteria term_crit
+        = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
     CvSVMParams result;
-    result.svm_type    = svm_type;
-    result.kernel_type = kernel_type;
-    result.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
+    result.svm_type    = CvSVM::C_SVC;
+    result.kernel_type = CvSVM::LINEAR;
+    result.term_crit   = term_crit;
     return result;
 }
 
-
-
-int main(int, char *[])
+// Draw the count trainingData on image in its respective colors.
+//
+static void drawTrainingData(cv::Mat &image, int count,
+                             float trainingData[][2], const cv::Scalar colors[])
 {
-    static const cv::Scalar black(  0,   0,   0);
-    static const cv::Scalar white(255, 255, 255);
-    static const cv::Scalar colors[4] = {black, white, white, white};
-    float labels[4] = {1.0, -1.0, -1.0, -1.0};
-    float trainingData[4][2] = {
-        {501, 10}, {255, 10}, {501, 255}, {10, 501}
-    };
-    static const cv::Mat labelsMat(4, 1, CV_32FC1, labels);
-    static const cv::Mat trainingDataMat(4, 2, CV_32FC1, trainingData);
+    for (int i = 0; i < count; ++i) {
+        static const int radius = 5;
+        static const int thickness = -1;
+        static const int lineType = 8;
+        const float *const v = trainingData[i];
+        const cv::Point center(v[0], v[1]);
+        cv::circle(image, center, radius, colors[i], thickness, lineType);
+    }
+}
+
+// Train svm on the count values in trainingData and labels, then draw on
+// image the partitions associated with each label value in green or blue
+// according to the resulting svm.
+//
+static void drawSvmRegions(cv::Mat &image, CvSVM &svm, int count,
+                           float trainingData[][2], float labels[])
+{
     static const cv::Mat zeroIdx;
     static const cv::Mat varIdx = zeroIdx;
     static const cv::Mat sampleIdx = zeroIdx;
     static const cv::Vec3b green(  0, 255, 0);
     static const cv::Vec3b blue (255,   0, 0);
-    const CvTermCriteria term_crit
-        = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
-    const CvSVMParams params
-        = makeSvmParams(CvSVM::C_SVC, CvSVM::LINEAR, term_crit);
-    CvSVM SVM;
-    SVM.train(trainingDataMat, labelsMat, varIdx, sampleIdx, params);
-    cv::Mat image = cv::Mat::zeros(512, 512, CV_8UC3);
+    static const CvSVMParams params = makeSvmParams();
+    const cv::Mat labelsMat(count, 1, CV_32FC1, labels);
+    const cv::Mat trainingDataMat(count, 2, CV_32FC1, trainingData);
+    svm.train(trainingDataMat, labelsMat, varIdx, sampleIdx, params);
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
-            cv::Mat sampleMat = (cv::Mat_<float>(1, 2) << i, j);
-            const float response = SVM.predict(sampleMat);
+            const cv::Mat sampleMat = (cv::Mat_<float>(1, 2) << i, j);
+            const float response = svm.predict(sampleMat);
             if (response == 1) {
                 image.at<cv::Vec3b>(j, i)  = green;
             } else if (response == -1) {
@@ -49,25 +56,41 @@ int main(int, char *[])
             }
         }
     }
-    for (int i = 0; i < 4; ++i) {
-        static const int radius = 5;
-        static const int thickness = -1;
-        static const int lineType = 8;
-        const float *const v = trainingData[i];
-        static const cv::Point center(v[0], v[1]);
-        cv::circle(image, center, radius, colors[i], thickness, lineType);
-    }
-    const int count = SVM.get_support_vector_count();
+}
+
+// Draw in red circles on image the support vectors in svm.
+//
+static void drawSvm(cv::Mat &image, CvSVM &svm)
+{
+    static const int radius = 9;
+    static const cv::Scalar red(0, 0, 255);
+    static const int thickness = 4;
+    static const int lineType  = 8;
+    const int count = svm.get_support_vector_count();
+    std::cout << "count == " << count << std::endl;
     for (int i = 0; i < count; ++i) {
-        static const cv::Scalar color(128, 128, 128);
-        static const int thickness = 2;
-        static const int lineType  = 8;
-        const float *const v = SVM.get_support_vector(i);
+        const float *const v = svm.get_support_vector(i);
         const cv::Point center(v[0], v[1]);
-        static const int radius = 6;
-        cv::circle(image, center, radius, color, thickness, lineType);
+        std::cout << i << ": center == " << center << std::endl;
+        cv::circle(image, center, radius, red, thickness, lineType);
     }
-    cv::imwrite("result.png", image);
+}
+
+// Show positive label values with black and negative values with white.
+//
+int main(int ac, const char *av[])
+{
+    static const cv::Scalar black(  0,   0,   0);
+    static const cv::Scalar white(255, 255, 255);
+    const cv::Scalar colors[] = {    black,     white,      white,    white};
+    float labels[]            = {      1.0,      -1.0,       -1.0,     -1.0};
+    float trainingData[][2]   = {{501, 10}, {255, 10}, {501, 255}, {10, 501}};
+    cv::Mat image = cv::Mat::zeros(512, 512, CV_8UC3);
+    CvSVM svm;
+    std::cout << std::endl << av[0] << ": Press any key to quit." << std::endl;
+    drawSvmRegions(image, svm, 4, trainingData, labels);
+    drawTrainingData(image, 4, trainingData, colors);
+    drawSvm(image, svm);
     cv::imshow("SVM Simple Example", image);
     cv::waitKey(0);
 }
