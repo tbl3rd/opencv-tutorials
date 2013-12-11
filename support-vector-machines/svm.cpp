@@ -12,17 +12,17 @@ static const cv::Scalar    red(  0,   0, 255);
 static const cv::Vec3b   green(  0, 255,   0);
 static const cv::Vec3b    blue(255,   0,   0);
 
-// Draw the count trainingData on image in its respective colors.
+// Draw the count trainData on image in its respective colors.
 //
 static void drawTrainingData(cv::Mat &image, int count,
-                             const float trainingData[][2],
+                             const float trainData[][2],
                              const cv::Scalar colors[])
 {
     static const int radius = 5;
     static const int thickness = -1;
     static const int lineType = 8;
     for (int i = 0; i < count; ++i) {
-        const float *const v = trainingData[i];
+        const float *const v = trainData[i];
         const cv::Point center(v[0], v[1]);
         cv::circle(image, center, radius, colors[i], thickness, lineType);
     }
@@ -30,7 +30,7 @@ static void drawTrainingData(cv::Mat &image, int count,
 
 // Draw in red circles on image the support vectors in svm.
 //
-static void drawSvm(cv::Mat &image, const CvSVM &svm)
+static void drawSvm(cv::Mat &image, const cv::SVM &svm)
 {
     static const int radius = 9;
     static const int thickness = 4;
@@ -48,35 +48,35 @@ static void drawSvm(cv::Mat &image, const CvSVM &svm)
 // Train with LINEAR kernel Support Vector Classifier (C_SVC) with up to
 // 100 iterations to achieve an epsilon of 1e-6, whichever comes first.
 //
-// tbl: Turns out that only setting kernel_type to CvSVM::LINEAR matters
+// tbl: Turns out that only setting kernel_type to cv::SVM::LINEAR matters
 // for this example.
 //
-static CvSVMParams makeSvmParams(void)
+static cv::SVMParams makeSvmParams(void)
 {
     static const int criteria = CV_TERMCRIT_ITER;
     static const int iterationCount = 100;
     static const double epsilon = std::numeric_limits<double>::epsilon();
-    CvSVMParams result;
-    result.svm_type    = CvSVM::C_SVC;
-    result.kernel_type = CvSVM::LINEAR;
+    cv::SVMParams result;
+    result.svm_type    = cv::SVM::C_SVC;
+    result.kernel_type = cv::SVM::LINEAR;
     result.term_crit   = cvTermCriteria(criteria, iterationCount, epsilon);
     return result;
 }
 
-// Train svm on the count values in trainingData and labels, then draw on
+// Train svm on the count values in trainData and labels, then draw on
 // image the classifications associated with each label value in green
 // (+1.0) or blue (-1.0) according to what the resulting svm predicts.
 //
-static void drawSvmRegions(cv::Mat_<cv::Vec3b> &image, CvSVM &svm,
-                           int count, float trainingData[][2], float labels[])
+static void drawSvmRegions(cv::Mat_<cv::Vec3b> &image, cv::SVM &svm,
+                           int count, float trainData[][2], float labels[])
 {
     static const cv::Mat zeroIdx;
     static const cv::Mat varIdx = zeroIdx;
     static const cv::Mat sampleIdx = zeroIdx;
-    static const CvSVMParams params = makeSvmParams();
+    static const cv::SVMParams params = makeSvmParams();
     const cv::Mat labelsMat(count, 1, CV_32FC1, labels);
-    const cv::Mat trainingDataMat(count, 2, CV_32FC1, trainingData);
-    svm.train(trainingDataMat, labelsMat, varIdx, sampleIdx, params);
+    const cv::Mat trainDataMat(count, 2, CV_32FC1, trainData);
+    svm.train(trainDataMat, labelsMat, varIdx, sampleIdx, params);
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
             const cv::Mat sampleMat = (cv::Mat_<float>(1, 2) << i, j);
@@ -100,12 +100,12 @@ int main(int ac, const char *av[])
 {
     const cv::Scalar colors[] = {      sky,    yellow,     yellow,   yellow};
     float labels[]            = {     +1.0,      -1.0,       -1.0,     -1.0};
-    float trainingData[][2]   = {{501, 10}, {255, 10}, {501, 255}, {10, 501}};
+    float trainData[][2]      = {{501, 10}, {255, 10}, {501, 255}, {10, 501}};
     cv::Mat_<cv::Vec3b> image = cv::Mat::zeros(512, 512, CV_8UC3);
-    CvSVM svm;
+    cv::SVM svm;
     std::cout << std::endl << av[0] << ": Press any key to quit." << std::endl;
-    drawSvmRegions(image, svm, 4, trainingData, labels);
-    drawTrainingData(image, 4, trainingData, colors);
+    drawSvmRegions(image, svm, 4, trainData, labels);
+    drawTrainingData(image, 4, trainData, colors);
     std::cout << "svm.get_var_count() == " << svm.get_var_count() << std::endl;
     drawSvm(image, svm);
     for (int i = 0; i < svm.get_var_count(); ++i)

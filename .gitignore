@@ -39,3 +39,5 @@
 /homography-perspective/homographyPerspective
 /cascade-classifier/cascadeClassify
 /support-vector-machines/svm
+/blinker/blink
+/svm-non-linear/svmNonlinear
