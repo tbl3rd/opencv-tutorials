@@ -146,6 +146,8 @@ int main(int, const char *[])
     cv::Mat_<cv::Vec3b> image = cv::Mat::zeros(512, 512, CV_8UC3);
     const cv::Mat_<float> data = makeData(count, image.size());
     const cv::Mat_<float> labels = labelData(count);
+    drawData(image, count, data);
+    cv::imshow("SVM for Non-Linear Training Data", image);
     std::cout << "Training SVM ... " << std::flush;
     cv::SVM svm;
     trainSvm(svm, data, labels);
