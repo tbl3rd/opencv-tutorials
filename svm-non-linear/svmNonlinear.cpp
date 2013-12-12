@@ -3,6 +3,7 @@
 
 
 // The values for the two classes of data in this example.
+// Support Vector Machines classify floating point data.
 //
 static const float greenStuff = 17.00;
 static const float  blueStuff = 23.00;
@@ -40,19 +41,16 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 // rows and 2 columns where the X coordinates of the scattered points are
 // in column 0 and the Y coordinates in column 1.
 //
-// The first separable (40%) points belong to the first region (x1), which
+// The first separable (40%) points belong to the green region (xG), which
 // labelData() will later give the value greenStuff.  The last separable
-// (40%) points belong to another region (x2), which labelData() will later
-// give the value blueStuff.  In between are 20% mixed between the two
-// regions (xM), such that labelData() will give the first half of the
+// (40%) points belong to the blue region (xB), which labelData() will
+// later give the value blueStuff.  In between are 20% mixed between the
+// two regions (xM), such that labelData() will give the first half of the
 // mixed 20% the value greenStuff and the second half the value blueStuff.
 //
 // Consequently, the separable regions divide vertically into roughly equal
-// areas somewhere along the X (column or width) axis and span the Y (row
-// or height) axis.
-//
-// The draw*() routines will later color the regions by coloring the first
-// half of the count points green and the second half blue.
+// areas somewhere along the X (column or width) axis and span the entire Y
+// (row or height) axis.
 //
 static cv::Mat_<float> makeData(int count, const cv::Size &size)
 {
@@ -63,12 +61,12 @@ static cv::Mat_<float> makeData(int count, const cv::Size &size)
     cv::Mat_<float> result(count, 2, CV_32FC1);
     const cv::Mat aX = result.colRange(0, 1); // all X coordinates
     const cv::Mat aY = result.colRange(1, 2); // all Y coordinates
-    const cv::Mat x1 = aX.rowRange(0.0 * count, 0.4 * count); // 40%
+    const cv::Mat xG = aX.rowRange(0.0 * count, 0.4 * count); // 40%
     const cv::Mat xM = aX.rowRange(0.4 * count, 0.6 * count); // 20%
-    const cv::Mat x2 = aX.rowRange(0.6 * count, 1.0 * count); // 40%
-    rng.fill(x1, uniform, 0.0 * cols, 0.4 * cols); //  40%
+    const cv::Mat xB = aX.rowRange(0.6 * count, 1.0 * count); // 40%
+    rng.fill(xG, uniform, 0.0 * cols, 0.4 * cols); //  40%
     rng.fill(xM, uniform, 0.4 * cols, 0.6 * cols); //  20%
-    rng.fill(x2, uniform, 0.6 * cols, 1.0 * cols); //  40%
+    rng.fill(xB, uniform, 0.6 * cols, 1.0 * cols); //  40%
     rng.fill(aY, uniform, 0.0 * rows, 1.0 * rows); // 100%
     return result;
 }
@@ -85,7 +83,7 @@ static cv::Mat_<float> labelData(const cv::Mat_<float> &data)
     return result;
 }
 
-// Draw on image the 2 classification regions predicted by svm.
+// Draw on image the two classification regions predicted by svm.
 //
 static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 {
