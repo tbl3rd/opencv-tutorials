@@ -34,20 +34,21 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 static cv::Mat_<float> makeData(int COUNT, const cv::Size &size)
 {
     static cv::RNG rng(666);
+    static const int uniform = cv::RNG::UNIFORM;
     static const int SEPARABLE = 90;
     const int NONSEPARABLE = COUNT - SEPARABLE;
     const int cols = size.width;
     const int rows = size.height;
     cv::Mat_<float> result(COUNT, 2, CV_32FC1);
     const cv::Mat class1 = result.rowRange(0, SEPARABLE);
-    rng.fill(class1.colRange(0, 1), cv::RNG::UNIFORM, 1.0, 0.4 * cols);
-    rng.fill(class1.colRange(1, 2), cv::RNG::UNIFORM, 1.0, 1.0 * rows);
+    rng.fill(class1.colRange(0, 1), uniform, 1.0       , 0.4 * cols);
+    rng.fill(class1.colRange(1, 2), uniform, 1.0       , 1.0 * rows);
     const cv::Mat class2 = result.rowRange(NONSEPARABLE, COUNT);
-    rng.fill(class2.colRange(0, 1), cv::RNG::UNIFORM, 0.6 * cols, 1.0 * cols);
-    rng.fill(class2.colRange(1, 2), cv::RNG::UNIFORM, 1.0       , 1.0 * rows);
+    rng.fill(class2.colRange(0, 1), uniform, 0.6 * cols, 1.0 * cols);
+    rng.fill(class2.colRange(1, 2), uniform, 1.0       , 1.0 * rows);
     const cv::Mat classX = result.rowRange(SEPARABLE, NONSEPARABLE);
-    rng.fill(classX.colRange(0, 1), cv::RNG::UNIFORM, 0.4 * cols, 0.6 * cols);
-    rng.fill(classX.colRange(1, 2), cv::RNG::UNIFORM, 1.0       , 1.0 * rows);
+    rng.fill(classX.colRange(0, 1), uniform, 0.4 * cols, 0.6 * cols);
+    rng.fill(classX.colRange(1, 2), uniform, 1.0       , 1.0 * rows);
     return result;
 }
 
