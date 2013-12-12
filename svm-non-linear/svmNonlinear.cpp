@@ -5,7 +5,7 @@
 
 
 // Train with LINEAR kernel Support Vector Classifier (C_SVC) with up to
-// 1e7 iterations to achieve an epsilon, whichever comes first.
+// 1e7 iterations to achieve epsilon.
 //
 static cv::SVMParams makeSvmParams(void)
 {
@@ -20,24 +20,23 @@ static cv::SVMParams makeSvmParams(void)
     return result;
 }
 
-// Train svm on the count values in trainData and labels.
+// Train svm on data and labels.
 //
-static void trainSvm(cv::SVM &svm, const cv::Mat &trainData,
-                     const cv::Mat labels)
+static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 {
     static const cv::Mat zeroIdx;
     static const cv::Mat varIdx = zeroIdx;
     static const cv::Mat sampleIdx = zeroIdx;
     static const cv::SVMParams params = makeSvmParams();
-    svm.train(trainData, labels, varIdx, sampleIdx, params);
+    svm.train(data, labels, varIdx, sampleIdx, params);
 }
 
 // Return TOTAL points of mostly SEPARABLE training data.
 //
-static cv::Mat_<float> makeData(int TOTAL, int SEPARABLE,
-                                const cv::Size &size)
+static cv::Mat_<float> makeData(int TOTAL, const cv::Size &size)
 {
-    static cv::RNG rng(100);
+    static cv::RNG rng(666);
+    static const int SEPARABLE = 90;
     const int NONSEPARABLE = TOTAL - SEPARABLE;
     const int cols = size.width;
     const int rows = size.height;
@@ -94,15 +93,25 @@ static void drawRegions(cv::Mat &image, const cv::SVM &svm)
     }
 }
 
-// Draw training datum as a circle of radius 3 at center on image in color.
+// Draw training data as TOTAL circles of radius 3 on image.
+// Again, draw class 1.0 in green and class 2.0 in blue.
 //
-static void drawDatum(cv::Mat &image,
-                      const cv::Point &center, const cv::Scalar &color)
+static void drawData(cv::Mat &image, int TOTAL, const cv::Mat_<float> &data)
 {
+    static const cv::Scalar green(  0, 255,   0);
+    static const cv::Scalar  blue(255,   0,   0);
     static const int radius = 3;
     static const int thickness = -1;
     static const int lineKind = 8;
-    cv::circle(image, center, radius, color, thickness, lineKind);
+    for (int i = 0; i < TOTAL / 2; ++i) {
+        const cv::Point center(data(i, 0), data(i, 1));
+        cv::circle(image, center, radius, green, thickness, lineKind);
+    }
+    for (int i = TOTAL / 2; i < TOTAL; ++i) {
+        const cv::Point center(data(i, 0), data(i, 1));
+        cv::circle(image, center, radius, blue, thickness, lineKind);
+    }
+
 }
 
 // Draw the support vectors in svm as circles of radius 6 in red.
@@ -125,30 +134,16 @@ static void drawSupportVectors(cv::Mat &image, const cv::SVM &svm)
 
 int main(int, const char *[])
 {
-    static const int TOTAL     = 200;
-    static const int SEPARABLE =  90;
+    static const int TOTAL = 200;
     cv::Mat image = cv::Mat::zeros(512, 512, CV_8UC3);
-    const cv::Mat_<float> data = makeData(TOTAL, SEPARABLE, image.size());
+    const cv::Mat_<float> data = makeData(TOTAL, image.size());
     const cv::Mat_<float> labels = labelData(TOTAL);
     std::cout << "Training SVM ... " << std::flush;
     cv::SVM svm;
     trainSvm(svm, data, labels);
     std::cout << "done." << std::endl;
     drawRegions(image, svm);
-    static const cv::Scalar green(0, 255, 0);
-    for (int i = 0; i < TOTAL / 2; ++i) {
-        const float x = data(i, 0);
-        const float y = data(i, 1);
-        const cv::Point center(x, y);
-        drawDatum(image, center, green);
-    }
-    static const cv::Scalar blue(255, 0, 0);
-    for (int i = TOTAL / 2; i < TOTAL; ++i) {
-        const float x = data(i, 0);
-        const float y = data(i, 1);
-        const cv::Point center(x, y);
-        drawDatum(image, center, blue);
-    }
+    drawData(image, TOTAL, data);
     drawSupportVectors(image, svm);
     cv::imwrite("result.png", image);
     cv::imshow("SVM for Non-Linear Training Data", image);
