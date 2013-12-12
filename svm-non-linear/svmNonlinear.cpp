@@ -3,18 +3,18 @@
 
 
 // Train with LINEAR kernel Support Vector Classifier (C_SVC) with up to
-// 1e7 iterations to achieve epsilon.
+// iterations times to achieve epsilon.
 //
 static cv::SVMParams makeSvmParams(void)
 {
     static const int criteria = CV_TERMCRIT_ITER;
-    static const int iterationCount = 10 * 1000 * 1000;
+    static const int iterations = 1000 * 1000;
     static const double epsilon = std::numeric_limits<double>::epsilon();
     cv::SVMParams result;
     result.svm_type    = cv::SVM::C_SVC;
     result.kernel_type = cv::SVM::LINEAR;
-    result.C           = 0.1;
-    result.term_crit   = cv::TermCriteria(criteria, iterationCount, epsilon);
+    result.C           = 0.1;           // not sure what this adds
+    result.term_crit   = cv::TermCriteria(criteria, iterations, epsilon);
     return result;
 }
 
@@ -41,8 +41,9 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 // such that labelData() will give the first half of the mixed 20% the
 // value 1.0 and the second half the value 2.0.
 //
-// Consequently, the separable regions divide vertically somewhere along
-// the X (column or width) axis and span the Y (row or height) axis.
+// Consequently, the separable regions divide vertically into roughly equal
+// areas somewhere along the X (column or width) axis and span the Y (row
+// or height) axis.
 //
 // The draw*() routines will later color the regions by coloring the first
 // half of the count points green and the second half blue.
@@ -50,7 +51,7 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 static cv::Mat_<float> makeData(int count, const cv::Size &size)
 {
     static const int uniform = cv::RNG::UNIFORM;
-    static cv::RNG rng(123);
+    static cv::RNG rng(600);
     const int cols = size.width;
     const int rows = size.height;
     cv::Mat_<float> result(count, 2, CV_32FC1);
@@ -66,14 +67,15 @@ static cv::Mat_<float> makeData(int count, const cv::Size &size)
     return result;
 }
 
-// Return half the count data labeled 1.0 and half labeled 2.0.
+// Return half of data labeled 1.0 and half labeled 2.0.
 //
-static cv::Mat_<float> labelData(int count)
+static cv::Mat_<float> labelData(const cv::Mat_<float> &data)
 {
-    const int half = count / 2;
-    cv::Mat_<float> result(count, 1, CV_32FC1);
+    const int rows = data.rows;
+    const int half = rows / 2;
+    cv::Mat_<float> result(rows, 1, CV_32FC1);
     result.rowRange(   0,  half).setTo(1.0);
-    result.rowRange(half, count).setTo(2.0);
+    result.rowRange(half,  rows).setTo(2.0);
     return result;
 }
 
@@ -82,20 +84,22 @@ static cv::Mat_<float> labelData(int count)
 //
 static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 {
-    static const cv::Vec3b green(  0, 100,  0);
-    static const cv::Vec3b  blue(100,   0,  0);
+    static const cv::Vec3b white(255, 255, 255);
+    static const cv::Vec3b green(  0, 100,   0);
+    static const cv::Vec3b  blue(100,   0,   0);
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
             const cv::Mat sample = (cv::Mat_<float>(1,2) << i, j);
             const float response = svm.predict(sample);
+            cv::Vec3b &pixel = image(j, i);
             if (response == 1.0) {
-                image(j, i) = green;
+                pixel = green;
             } else if (response == 2.0) {
-                image(j, i) = blue;
+                pixel = blue;
             } else {
+                pixel = white;
                 std::cerr << "Unexpected response from SVM::predict(): "
                           << response << std::endl;
-                assert(!"expected response from SVM");
             }
         }
     }
@@ -104,22 +108,22 @@ static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 // Draw training data as count circles of radius 3 on image.
 // Again, draw class 1.0 in green and class 2.0 in blue.
 //
-static void drawData(cv::Mat &image, int count, const cv::Mat_<float> &data)
+static void drawData(cv::Mat &image, const cv::Mat_<float> &data)
 {
     static const cv::Scalar green(  0, 255,   0);
     static const cv::Scalar  blue(255,   0,   0);
     static const int radius = 3;
     static const int thickness = -1;
     static const int lineKind = 8;
-    for (int i = 0; i < count / 2; ++i) {
+    const int rows = data.rows;
+    for (int i = 0; i < rows / 2; ++i) {
         const cv::Point center(data(i, 0), data(i, 1));
         cv::circle(image, center, radius, green, thickness, lineKind);
     }
-    for (int i = count / 2; i < count; ++i) {
+    for (int i = rows / 2; i < rows; ++i) {
         const cv::Point center(data(i, 0), data(i, 1));
         cv::circle(image, center, radius, blue, thickness, lineKind);
     }
-
 }
 
 // Draw the support vectors in svm as circles of radius 6 in red.
@@ -145,17 +149,17 @@ int main(int, const char *[])
     static const int count = 200;
     cv::Mat_<cv::Vec3b> image = cv::Mat::zeros(512, 512, CV_8UC3);
     const cv::Mat_<float> data = makeData(count, image.size());
-    const cv::Mat_<float> labels = labelData(count);
-    drawData(image, count, data);
+    const cv::Mat_<float> labels = labelData(data);
+    drawData(image, data);
     cv::imshow("SVM for Non-Linear Training Data", image);
     std::cout << "Training SVM ... " << std::flush;
     cv::SVM svm;
     trainSvm(svm, data, labels);
     std::cout << "done." << std::endl;
     drawRegions(image, svm);
-    drawData(image, count, data);
+    drawData(image, data);
     drawSupportVectors(image, svm);
-    cv::imwrite("result.png", image);
     cv::imshow("SVM for Non-Linear Training Data", image);
+    cv::imwrite("result.png", image);
     cv::waitKey(0);
 }
