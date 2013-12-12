@@ -29,13 +29,30 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
     svm.train(data, labels, varIdx, sampleIdx, params);
 }
 
-// Return COUNT points of mostly SEPARABLE training data.
+// Return COUNT points of mostly (90%) SEPARABLE training data randomly
+// scattered in a float matrix of size.  The first SEPARABLE (45%) points
+// belong to class 1, which labelData() will later give the value 1.0.  The
+// last SEPARABLE (45%) points belong to class 2, which labelData() will
+// later give the value 2.0.  In between are 10% mixed between the two
+// classes, such that labelData() will give the first half the value 1.0
+// and the second half the value 2.0.
+//
+// The draw*() routines will later color the classes by coloring the first
+// half of the points green and the second half blue.
+//
+// The 2 regions divide along the X (column or width) axis and span the
+// entire Y (row or height) axis.
+//                                  columns       rows
+// One separable region is       {[  0%,  40%), [0, 100%)}
+// The other separable region is {[ 60%, 100%), [0, 100%)}
+// The mixed region between is   {[ 40%,  60%), [0, 100%)}
 //
 static cv::Mat_<float> makeData(int COUNT, const cv::Size &size)
 {
     static cv::RNG rng(666);
     static const int uniform = cv::RNG::UNIFORM;
-    static const int SEPARABLE = 90;
+    const int PERCLASS = COUNT / 2;
+    const int SEPARABLE = 90 * PERCLASS / 100;
     const int NONSEPARABLE = COUNT - SEPARABLE;
     const int cols = size.width;
     const int rows = size.height;
