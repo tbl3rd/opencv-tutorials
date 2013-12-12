@@ -87,9 +87,9 @@ static cv::Mat_<float> labelData(const cv::Mat_<float> &data)
 //
 static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 {
-    static const cv::Vec3b   pink(100, 100, 255);
-    static const cv::Vec3b  green(  0, 100,   0);
-    static const cv::Vec3b   blue(100,   0,   0);
+    static const cv::Vec3b  pink(100, 100, 255);
+    static const cv::Vec3b green(  0, 100,   0);
+    static const cv::Vec3b  blue(100,   0,   0);
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
             const cv::Mat sample = (cv::Mat_<float>(1,2) << i, j);
@@ -109,6 +109,7 @@ static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 }
 
 // Draw training data as count circles of radius 3 on image.
+// Draw the first half in green and the second half in blue.
 //
 static void drawData(cv::Mat &image, const cv::Mat_<float> &data)
 {
