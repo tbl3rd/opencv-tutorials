@@ -150,12 +150,13 @@ static void drawSupportVectors(cv::Mat &image, const cv::SVM &svm)
 
 int main(int, const char *[])
 {
+    static const char title[] = "SVM for Non-Linear Training Data";
     static const int count = 200;
     cv::Mat_<cv::Vec3b> image = cv::Mat::zeros(512, 512, CV_8UC3);
     const cv::Mat_<float> data = makeData(count, image.size());
     const cv::Mat_<float> labels = labelData(data);
     drawData(image, data);
-    cv::imshow("SVM for Non-Linear Training Data", image);
+    cv::imshow(title, image);
     std::cout << "Training SVM ... " << std::flush;
     cv::SVM svm;
     trainSvm(svm, data, labels);
@@ -163,7 +164,7 @@ int main(int, const char *[])
     drawRegions(image, svm);
     drawData(image, data);
     drawSupportVectors(image, svm);
-    cv::imshow("SVM for Non-Linear Training Data", image);
+    cv::imshow(title, image);
     cv::imwrite("result.png", image);
     cv::waitKey(0);
 }
