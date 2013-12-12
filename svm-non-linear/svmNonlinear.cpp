@@ -2,6 +2,12 @@
 #include <opencv2/ml/ml.hpp>
 
 
+// The values for the two classes of data in this example.
+//
+static const float greenStuff = 17.00;
+static const float  blueStuff = 23.00;
+
+
 // Train with LINEAR kernel Support Vector Classifier (C_SVC) with up to
 // iterations times to achieve epsilon.
 //
@@ -35,11 +41,11 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 // in column 0 and the Y coordinates in column 1.
 //
 // The first separable (40%) points belong to the first region (x1), which
-// labelData() will later give the value 1.0.  The last separable (40%)
-// points belong to another region (x2), which labelData() will later give
-// the value 2.0.  In between are 20% mixed between the two regions (xM),
-// such that labelData() will give the first half of the mixed 20% the
-// value 1.0 and the second half the value 2.0.
+// labelData() will later give the value greenStuff.  The last separable
+// (40%) points belong to another region (x2), which labelData() will later
+// give the value blueStuff.  In between are 20% mixed between the two
+// regions (xM), such that labelData() will give the first half of the
+// mixed 20% the value greenStuff and the second half the value blueStuff.
 //
 // Consequently, the separable regions divide vertically into roughly equal
 // areas somewhere along the X (column or width) axis and span the Y (row
@@ -51,7 +57,7 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
 static cv::Mat_<float> makeData(int count, const cv::Size &size)
 {
     static const int uniform = cv::RNG::UNIFORM;
-    static cv::RNG rng(600);
+    static cv::RNG rng(666);
     const int cols = size.width;
     const int rows = size.height;
     cv::Mat_<float> result(count, 2, CV_32FC1);
@@ -67,46 +73,44 @@ static cv::Mat_<float> makeData(int count, const cv::Size &size)
     return result;
 }
 
-// Return half of data labeled 1.0 and half labeled 2.0.
+// Return half of data labeled greenStuff and half labeled blueStuff.
 //
 static cv::Mat_<float> labelData(const cv::Mat_<float> &data)
 {
     const int rows = data.rows;
     const int half = rows / 2;
     cv::Mat_<float> result(rows, 1, CV_32FC1);
-    result.rowRange(   0,  half).setTo(1.0);
-    result.rowRange(half,  rows).setTo(2.0);
+    result.rowRange(   0,  half).setTo(greenStuff);
+    result.rowRange(half,  rows).setTo(blueStuff);
     return result;
 }
 
 // Draw on image the 2 classification regions predicted by svm.
-// Draw class labeled 1.0 in green, and class 2.0 in blue.
 //
 static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 {
-    static const cv::Vec3b white(255, 255, 255);
-    static const cv::Vec3b green(  0, 100,   0);
-    static const cv::Vec3b  blue(100,   0,   0);
+    static const cv::Vec3b   pink(100, 100, 255);
+    static const cv::Vec3b  green(  0, 100,   0);
+    static const cv::Vec3b   blue(100,   0,   0);
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
             const cv::Mat sample = (cv::Mat_<float>(1,2) << i, j);
             const float response = svm.predict(sample);
             cv::Vec3b &pixel = image(j, i);
-            if (response == 1.0) {
+            if (response == greenStuff) {
                 pixel = green;
-            } else if (response == 2.0) {
+            } else if (response == blueStuff) {
                 pixel = blue;
             } else {
-                pixel = white;
-                std::cerr << "Unexpected response from SVM::predict(): "
-                          << response << std::endl;
+                pixel = pink;
+                std::cerr << "Unexpected response from SVM::predict("
+                          << sample << ") : " << response << std::endl;
             }
         }
     }
 }
 
 // Draw training data as count circles of radius 3 on image.
-// Again, draw class 1.0 in green and class 2.0 in blue.
 //
 static void drawData(cv::Mat &image, const cv::Mat_<float> &data)
 {
