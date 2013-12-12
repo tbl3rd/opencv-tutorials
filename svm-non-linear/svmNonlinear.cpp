@@ -65,7 +65,7 @@ static cv::Mat_<float> labelData(int COUNT)
 // Draw on image the 2 classification regions predicted by svm.
 // Draw class labeled 1.0 in green, and class 2.0 in blue.
 //
-static void drawRegions(cv::Mat &image, const cv::SVM &svm)
+static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
 {
     static const cv::Vec3b green(  0, 100,  0);
     static const cv::Vec3b  blue(100,   0,  0);
@@ -74,9 +74,9 @@ static void drawRegions(cv::Mat &image, const cv::SVM &svm)
             const cv::Mat sample = (cv::Mat_<float>(1,2) << i, j);
             const float response = svm.predict(sample);
             if (response == 1.0) {
-                image.at<cv::Vec3b>(j, i) = green;
+                image(j, i) = green;
             } else if (response == 2.0) {
-                image.at<cv::Vec3b>(j, i) = blue;
+                image(j, i) = blue;
             } else {
                 std::cerr << "Unexpected response from SVM::predict(): "
                           << response << std::endl;
@@ -128,7 +128,7 @@ static void drawSupportVectors(cv::Mat &image, const cv::SVM &svm)
 int main(int, const char *[])
 {
     static const int COUNT = 200;
-    cv::Mat image = cv::Mat::zeros(512, 512, CV_8UC3);
+    cv::Mat_<cv::Vec3b> image = cv::Mat::zeros(512, 512, CV_8UC3);
     const cv::Mat_<float> data = makeData(COUNT, image.size());
     const cv::Mat_<float> labels = labelData(COUNT);
     std::cout << "Training SVM ... " << std::flush;
