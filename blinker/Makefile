@@ -7,6 +7,8 @@ CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := blink
 ARGS := 500 ./left.png ./right.png
+ARGS := 500 ./old-80.png ./new-80.png
+ARGS := 500 ./old.png ./new.png
 
 main: $(EXECUTABLE)
 

@@ -29,54 +29,51 @@ static void trainSvm(cv::SVM &svm, const cv::Mat &data, const cv::Mat labels)
     svm.train(data, labels, varIdx, sampleIdx, params);
 }
 
-// Return COUNT points of mostly (80%) SEParable training data randomly
-// scattered in a float matrix of size.
+// Return count points of mostly (80%) separable training data randomly
+// scattered in a rectangle of size.  The result is a float matrix of count
+// rows and 2 columns where the X coordinates of the scattered points are
+// in column 0 and the Y coordinates in column 1.
 //
-// The first SEParable (40%) points belong to the first region (x1), which
-// labelData() will later give the value 1.0.  The last SEParable (40%)
+// The first separable (40%) points belong to the first region (x1), which
+// labelData() will later give the value 1.0.  The last separable (40%)
 // points belong to another region (x2), which labelData() will later give
 // the value 2.0.  In between are 20% mixed between the two regions (xM),
 // such that labelData() will give the first half of the mixed 20% the
 // value 1.0 and the second half the value 2.0.
 //
+// Consequently, the separable regions divide vertically somewhere along
+// the X (column or width) axis and span the Y (row or height) axis.
+//
 // The draw*() routines will later color the regions by coloring the first
-// half of the COUNT points green and the second half blue.
+// half of the count points green and the second half blue.
 //
-// The regions divide along the X (column or width) axis and span the
-// entire Y (row or height) axis.
-//                                   rows Y     columns X
-// The first separable region is {[  0%,  40%), [0, 100%)}
-// The mixed region between is   {[ 40%,  60%), [0, 100%)}
-// The other separable region is {[ 60%, 100%), [0, 100%)}
-//
-// The result is a 2-D float matrix whose row is the COUNT data points, and
-// where column 0 has the X coordinates and column 1 has the Y coordinates.
-//
-static cv::Mat_<float> makeData(int COUNT, const cv::Size &size)
+static cv::Mat_<float> makeData(int count, const cv::Size &size)
 {
-    static cv::RNG rng(666);
     static const int uniform = cv::RNG::UNIFORM;
-    const int SEP = 0.4 * COUNT;
+    static cv::RNG rng(123);
     const int cols = size.width;
     const int rows = size.height;
-    cv::Mat_<float> result(COUNT, 2, CV_32FC1);
-    const cv::Mat x1 = result.rowRange(                0,   SEP);
-    const cv::Mat xM = result.rowRange(        SEP, COUNT - SEP);
-    const cv::Mat x2 = result.rowRange(COUNT - SEP, COUNT      );
-    rng.fill(x1.colRange(0, 1), uniform, 0.0 * cols, 0.4 * cols); //  40%
-    rng.fill(xM.colRange(0, 1), uniform, 0.4 * cols, 0.6 * cols); //  20%
-    rng.fill(x2.colRange(0, 1), uniform, 0.6 * cols, 1.0 * cols); //  40%
-    rng.fill(result.colRange(1, 2), uniform, 0.0 * rows, 1.0 * rows);
+    cv::Mat_<float> result(count, 2, CV_32FC1);
+    const cv::Mat aX = result.colRange(0, 1); // all X coordinates
+    const cv::Mat aY = result.colRange(1, 2); // all Y coordinates
+    const cv::Mat x1 = aX.rowRange(0.0 * count, 0.4 * count); // 40%
+    const cv::Mat xM = aX.rowRange(0.4 * count, 0.6 * count); // 20%
+    const cv::Mat x2 = aX.rowRange(0.6 * count, 1.0 * count); // 40%
+    rng.fill(x1, uniform, 0.0 * cols, 0.4 * cols); //  40%
+    rng.fill(xM, uniform, 0.4 * cols, 0.6 * cols); //  20%
+    rng.fill(x2, uniform, 0.6 * cols, 1.0 * cols); //  40%
+    rng.fill(aY, uniform, 0.0 * rows, 1.0 * rows); // 100%
     return result;
 }
 
-// Return half the COUNT data labeled 1.0 and half labeled 2.0.
+// Return half the count data labeled 1.0 and half labeled 2.0.
 //
-static cv::Mat_<float> labelData(int COUNT)
+static cv::Mat_<float> labelData(int count)
 {
-    cv::Mat_<float> result(COUNT, 1, CV_32FC1);
-    result.rowRange(        0, COUNT / 2).setTo(1.0);
-    result.rowRange(COUNT / 2, COUNT    ).setTo(2.0);
+    const int half = count / 2;
+    cv::Mat_<float> result(count, 1, CV_32FC1);
+    result.rowRange(   0,  half).setTo(1.0);
+    result.rowRange(half, count).setTo(2.0);
     return result;
 }
 
@@ -104,21 +101,21 @@ static void drawRegions(cv::Mat_<cv::Vec3b> &image, const cv::SVM &svm)
     }
 }
 
-// Draw training data as COUNT circles of radius 3 on image.
+// Draw training data as count circles of radius 3 on image.
 // Again, draw class 1.0 in green and class 2.0 in blue.
 //
-static void drawData(cv::Mat &image, int COUNT, const cv::Mat_<float> &data)
+static void drawData(cv::Mat &image, int count, const cv::Mat_<float> &data)
 {
     static const cv::Scalar green(  0, 255,   0);
     static const cv::Scalar  blue(255,   0,   0);
     static const int radius = 3;
     static const int thickness = -1;
     static const int lineKind = 8;
-    for (int i = 0; i < COUNT / 2; ++i) {
+    for (int i = 0; i < count / 2; ++i) {
         const cv::Point center(data(i, 0), data(i, 1));
         cv::circle(image, center, radius, green, thickness, lineKind);
     }
-    for (int i = COUNT / 2; i < COUNT; ++i) {
+    for (int i = count / 2; i < count; ++i) {
         const cv::Point center(data(i, 0), data(i, 1));
         cv::circle(image, center, radius, blue, thickness, lineKind);
     }
@@ -145,16 +142,16 @@ static void drawSupportVectors(cv::Mat &image, const cv::SVM &svm)
 
 int main(int, const char *[])
 {
-    static const int COUNT = 200;
+    static const int count = 200;
     cv::Mat_<cv::Vec3b> image = cv::Mat::zeros(512, 512, CV_8UC3);
-    const cv::Mat_<float> data = makeData(COUNT, image.size());
-    const cv::Mat_<float> labels = labelData(COUNT);
+    const cv::Mat_<float> data = makeData(count, image.size());
+    const cv::Mat_<float> labels = labelData(count);
     std::cout << "Training SVM ... " << std::flush;
     cv::SVM svm;
     trainSvm(svm, data, labels);
     std::cout << "done." << std::endl;
     drawRegions(image, svm);
-    drawData(image, COUNT, data);
+    drawData(image, count, data);
     drawSupportVectors(image, svm);
     cv::imwrite("result.png", image);
     cv::imshow("SVM for Non-Linear Training Data", image);
