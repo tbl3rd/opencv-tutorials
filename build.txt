@@ -1,0 +1,16 @@
+To build OpenCV without CUDA, which OSX 10.9 appears to break.
+
+/usr/local/bin/cmake --debug -G 'Unix Makefiles' -DWITH_CUDA=OFF -DCMAKE_CXX_FLAGS=-stdlib=libstdc++ -DCMAKE_INSTALL_PREFIX=$(HOME)/qrc/track/opencv-tutorials/opencv/install ../../../opencv
+
+To build with CUDA again later, try this.
+
+/usr/local/bin/cmake --debug -G 'Unix Makefiles' -DCUDA_HOST_COMPILER=/usr/bin/clang -DCMAKE_CXX_FLAGS=-stdlib=libstdc++ -D CMAKE_INSTALL_PREFIX=$(HOME)/qrc/track/opencv-tutorials/opencv/install ../../../opencv
+
+Need CMake version 2.8.12.1 for CUDA because 2.8.12 cannot build it.
+
+shell # kextstat | grep -i cuda
+  116    0 0xffffff7f81c0a000 0x2000     0x2000     com.nvidia.CUDA (1.1.0) <4 1>
+shell # 
+
+... means that the CUDA driver is installed.  MacOSX updated sometimes
+unload it requiring another CUDA installation.
