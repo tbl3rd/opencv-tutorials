@@ -57,7 +57,7 @@ static void drawCircle(cv::Mat &image, const cv::Vec3f &circle)
 //
 static cv::Mat drawHoughCircles(const cv::Mat &gray, const cv::Mat &image)
 {
-    static const int method = CV_HOUGH_GRADIENT;
+    static const int method = cv::HOUGH_GRADIENT;
     static const double dotPitchRatio = 1.0;
     static const double minDistance = 3.0;
     static const double param1 = 200.0;

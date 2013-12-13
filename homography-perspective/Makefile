@@ -1,4 +1,4 @@
-INSTALL := $(HOME)/qrc/track/opencv/install
+INSTALL := ../opencv/install
 LIBS := \
 -lopencv_calib3d \
 -lopencv_core \

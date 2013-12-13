@@ -26,8 +26,10 @@ int main (int ac, char *av[])
             cv::cvtColor(image, grayImage, cv::COLOR_BGR2GRAY);
             cv::imwrite("./gray-image.jpg", grayImage);
             cv::namedWindow(imageName, cv::WINDOW_AUTOSIZE);
-            cv::namedWindow("Gray Image", cv::WINDOW_AUTOSIZE);
+            cv::moveWindow(imageName, 0, 0);
             cv::imshow(imageName, image);
+            cv::namedWindow("Gray Image", cv::WINDOW_AUTOSIZE);
+            cv::moveWindow("Gray Image", image.cols, 0);
             cv::imshow("Gray Image", grayImage);
             cv::waitKey(0);
             dumpBunchOfMats();

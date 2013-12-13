@@ -84,17 +84,16 @@ private:
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->thresholdBar <= pD->maxThreshold);
         const double value = pD->thresholdBar;
         pD->apply(value);
         cv::imshow(pD->caption, pD->dstImage);
     }
 
-    // Add a trackbar with label of range 0 to max in bar.
+    // Add a trackbar in window with label of range 0 to max in bar.
     //
-    void makeTrackbar(const char *label, int *bar, int max)
+    void makeTrackbar(const char *label, const char *window, int *bar, int max)
     {
-        cv::createTrackbar(label, caption, bar, max, &show, this);
+        cv::createTrackbar(label, window, bar, max, &show, this);
     }
 
 public:
@@ -103,14 +102,18 @@ public:
     //
     void operator()(void) { DemoDisplay::show(0, this); }
 
+    int threshold(void) { return thresholdBar; }
+
     // Construct a Canny demo display operating on source image s.
     //
     DemoDisplay(const cv::Mat &s):
         srcImage(s), caption("Edge Map"), thresholdBar(0), maxThreshold(100)
     {
         srcImage.copyTo(dstImage);
+        makeWindow("Original", srcImage, 2);
         makeWindow(caption, dstImage);
-        makeTrackbar("Threshold:", &thresholdBar,  maxThreshold);
+        makeTrackbar("Threshold:", caption, &thresholdBar,  maxThreshold);
+        makeTrackbar("Threshold:", "Original", &thresholdBar,  maxThreshold);
     }
 };
 
@@ -120,10 +123,12 @@ int main(int ac, const char *av[])
     if (ac == 2) {
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
-            makeWindow("Original", image, 2);
-            cv::createTrackbar("for alignment only", "Original", 0, 0, 0, 0);
             DemoDisplay demo(image); demo();
+            std::cout << "Initial threshold is: " << demo.threshold()
+                      << std::endl;
             cv::waitKey(0);
+            std::cout << "Final threshold was: " << demo.threshold()
+                      << std::endl;
             return 0;
         }
     }

@@ -60,8 +60,6 @@ private:
     {
         static ThresholdKind oldKind;
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->kindBar  <  theThresholdKindCount);
-        assert(pD->valueBar <= theMaxValue);
         const double value = pD->valueBar;
         const double max = theMaxValue;
         const ThresholdKind kind = theThresholdKinds[pD->kindBar];

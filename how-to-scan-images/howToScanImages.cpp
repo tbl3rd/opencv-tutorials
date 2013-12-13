@@ -1,4 +1,5 @@
 ﻿#include <opencv2/core/core.hpp>
+#include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <sstream>
@@ -30,6 +31,31 @@ static void showUsage(const char *av0)
         << std::endl << std::endl;
 }
 
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
+//
+// The 23 term works around how MacOSX decorates windows.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
+{
+    static int across = 1;
+    static int count, moveX, moveY, maxY = 0;
+    if (reset) {
+        across = reset;
+        count = moveX = moveY = maxY = 0;
+    }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
+    cv::moveWindow(window, moveX, moveY);
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
+}
+
 // Return divisor after loading an image file into img.
 // Return 0 after showing a usage message if there's a problem.
 //
@@ -40,7 +66,7 @@ static int useCommandLine(int ac, const char *av[], cv::Mat &img)
         std::stringstream ss; ss << av[2]; ss >> divisor;
         if (ss && divisor) {
             const bool g = (ac == 4) && (*"g" == *av[3]);
-            const int cogOpt = g? CV_LOAD_IMAGE_GRAYSCALE: CV_LOAD_IMAGE_COLOR;
+            const int cogOpt = g? cv::IMREAD_GRAYSCALE: cv::IMREAD_COLOR;
             img = cv::imread(av[1], cogOpt);
             if (img.data) return divisor;
         }
@@ -73,7 +99,7 @@ struct Test {
         const double msPerRun = totalSeconds * 1000 / runCount;
         std::cout << "Average " << label << " time in milliseconds: "
                   << msPerRun << std::endl;
-        cv::imshow(label, reduced);
+        makeWindow(label, reduced);
     }
 
     Test(const cv::Mat &lut, const cv::Mat &i, const char *m,
@@ -202,7 +228,7 @@ int main(int ac, const char *av[])
     cv::Mat image, table(1, 256, CV_8U);
     const int divisor = useCommandLine(ac, av, image);
     if (divisor == 0 || CV_8U != image.depth()) return 1;
-    cv::imshow(av[1], image);
+    makeWindow(av[1], image, 3);
     uchar *const p = table.data;
     for (int i = 0; i < table.cols; ++i) p[i] = (divisor * (i / divisor));
     const Test tests[] = {

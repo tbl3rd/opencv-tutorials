@@ -1,4 +1,4 @@
-INSTALL := $(HOME)/qrc/track/opencv/install
+INSTALL := ../opencv/install
 LIBS :=  -lopencv_core -lopencv_highgui -lopencv_imgproc
 
 CXXFLAGS := -g -O0

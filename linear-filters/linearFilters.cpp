@@ -31,6 +31,7 @@ int main(int ac, const char *av[])
         const cv::Mat src = cv::imread(av[1]);
         if (src.data) {
             cv::namedWindow("filter2d() demo", cv::WINDOW_AUTOSIZE);
+            std::cout << av[0] << ": Press some key to quit." << std::endl;
             for (int i = 0; i < std::numeric_limits<int>::max(); ++i) {
                 const cv::Mat kernel = makeKernel(i);
                 const cv::Mat dst = applyFilter(src, kernel);

@@ -75,10 +75,10 @@ static void compareHistograms(const std::vector<cv::Mat> &histogram,
                               const char *name[])
 {
     static const struct Method {const char *name; int value;} method[] = {
-        {"Correlation Match"     , CV_COMP_CORREL       },
-        {"Intersection Match"    , CV_COMP_INTERSECT    },
-        {"Chi-Square Distance"   , CV_COMP_CHISQR       },
-        {"Bhattacharyya Distance", CV_COMP_BHATTACHARYYA}
+        {"Correlation Match"     , cv::HISTCMP_CORREL       },
+        {"Intersection Match"    , cv::HISTCMP_INTERSECT    },
+        {"Chi-Square Distance"   , cv::HISTCMP_CHISQR       },
+        {"Bhattacharyya Distance", cv::HISTCMP_BHATTACHARYYA}
     };
     static const int methodCount = sizeof method / sizeof method[0];
     std::cout << std::endl;

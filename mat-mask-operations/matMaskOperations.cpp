@@ -1,3 +1,4 @@
+#include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
@@ -26,6 +27,31 @@ static void showUsage(const char *av0)
         << std::endl << std::endl;
 }
 
+// Create a new unobscured named window for image.
+// Reset windows layout with when reset is not 0.
+//
+// The 23 term works around how MacOSX decorates windows.
+//
+static void makeWindow(const char *window, const cv::Mat &image, int reset = 0)
+{
+    static int across = 1;
+    static int count, moveX, moveY, maxY = 0;
+    if (reset) {
+        across = reset;
+        count = moveX = moveY = maxY = 0;
+    }
+    if (count % across == 0) {
+        moveY += maxY + 23;
+        maxY = moveX = 0;
+    }
+    ++count;
+    cv::namedWindow(window, cv::WINDOW_AUTOSIZE);
+    cv::moveWindow(window, moveX, moveY);
+    cv::imshow(window, image);
+    moveX += image.cols;
+    maxY = std::max(maxY, image.rows);
+}
+
 // Return the image specified on the command line.
 // Show the usage message if something is wrong.
 //
@@ -35,7 +61,7 @@ static cv::Mat useCommandLine(int ac, const char *av[])
     int ok = ac == 2 || ac == 3;
     if (ok) {
         const bool g = (ac == 3) && (*"g" == *av[2]);
-        const int cogOpt = g? CV_LOAD_IMAGE_GRAYSCALE: CV_LOAD_IMAGE_COLOR;
+        const int cogOpt = g? cv::IMREAD_GRAYSCALE: cv::IMREAD_COLOR;
         result = cv::imread(av[1], cogOpt);
         ok = CV_8U == result.depth();
     }
@@ -108,7 +134,7 @@ int main(int ac, const char *av[])
 {
     const cv::Mat inputImage = useCommandLine(ac, av);
     if (!inputImage.data) return 1;
-    cv::imshow(av[1], inputImage);
+    makeWindow(av[1], inputImage, 3);
     HandCodedTest handCodedTest(inputImage);
     Filter2dTest builtinTest(inputImage);
     Test *tests[] = { &handCodedTest, &builtinTest };
@@ -123,7 +149,7 @@ int main(int ac, const char *av[])
         const double msPerRun = totalSeconds * 1000 / runCount;
         std::cout << "Average " << test.label << " time in milliseconds: "
                   << msPerRun << std::endl;
-        cv::imshow(test.label, test.output);
+        makeWindow(test.label, test.output);
     }
     cv::waitKey(0);
     return 0;

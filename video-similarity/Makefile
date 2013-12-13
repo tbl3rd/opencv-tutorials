@@ -1,4 +1,4 @@
-INSTALL := $(HOME)/qrc/track/opencv/install
+INSTALL := ../opencv/install
 LIBS :=  -lopencv_core -lopencv_highgui -lopencv_imgproc -lstdc++
 
 CXXFLAGS := -g -O0
@@ -6,7 +6,7 @@ CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
 EXECUTABLE := videoSimilarity
-ARGS := ../resources/Megamind.avi ../resources/Megamind_bugy.avi 35 5
+ARGS := ../resources/Megamind.avi ../resources/Megamind_bugy.avi 35
 
 main: $(EXECUTABLE)
 

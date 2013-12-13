@@ -82,7 +82,7 @@ static int randomLines(cv::Mat &image)
 static int randomRectangles(cv::Mat &image)
 {
     for (int i = 0; i < stepMax; ++i) {
-        const int thickness = MAX(rng.uniform(-3, 10), CV_FILLED);
+        const int thickness = MAX(rng.uniform(-3, 10), cv::FILLED);
         cv::rectangle(image, randomPoint(image), randomPoint(image),
                       randomColor(), thickness);
         if (showImage(image)) return true;
@@ -198,7 +198,7 @@ static int bigFinale(cv::Mat &image)
     return false;
 }
 
-int main(int, const char *[])
+int main(int ac, const char *av[])
 {
     cv::Mat image = cv::Mat::zeros(600, 900, CV_8UC3);
     if (showImage(image)) return 0;
@@ -213,6 +213,7 @@ int main(int, const char *[])
         &bigFinale
     };
     static const int count = sizeof draw / sizeof draw[0];
+    std::cout << av[0] << ": Press some key to quit." << std::endl;
     for (int i = 0; i < count; ++i) if ((*draw[i])(image)) return 0;
     cv::waitKey(0);
     return 0;

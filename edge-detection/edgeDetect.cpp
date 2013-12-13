@@ -96,6 +96,7 @@ static void showScharr(const cv::Mat &src, int kernelSizeIgnored)
 //
 static void showSobelScharr(const cv::Mat &src, int kernelSizeIgnored)
 {
+    static const int cv_scharr = -1;
     static const int borderKind = cv::BORDER_DEFAULT;
     static const int depth = CV_16S;
     static const double scale = 1.0;
@@ -105,10 +106,10 @@ static void showSobelScharr(const cv::Mat &src, int kernelSizeIgnored)
     static const double gamma = 0.0;
     cv::Mat grad, gradX, gradY, absGradX, absGradY;
     int dx = 1, dy = 0;
-    cv::Sobel(src, gradX, depth, dx, dy, CV_SCHARR, scale, delta, borderKind);
+    cv::Sobel(src, gradX, depth, dx, dy, cv_scharr, scale, delta, borderKind);
     cv::convertScaleAbs(gradX, absGradX);
     dx = 0, dy = 1;
-    cv::Sobel(src, gradY, depth, dx, dy, CV_SCHARR, scale, delta, borderKind);
+    cv::Sobel(src, gradY, depth, dx, dy, cv_scharr, scale, delta, borderKind);
     cv::convertScaleAbs(gradY, absGradY);
     cv::addWeighted(absGradX, alpha, absGradY, beta, gamma, grad);
     makeWindow("Sobel(CV_SCHARR) Derivative", grad);

@@ -108,7 +108,6 @@ class DemoDisplay {
     static void showCorners(int positionIgnoredUseThisInstead, void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert (pD->bar <= pD->maxBar);
         const double threshold = pD->bar;
         const cv::Mat &scaled = pD->apply(threshold);
         cv::imshow("Corners", scaled);

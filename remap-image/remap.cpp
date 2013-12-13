@@ -1,6 +1,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
+#include <cassert>
 
 
 // Create a new unobscured named window for image.

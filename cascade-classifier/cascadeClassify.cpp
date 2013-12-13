@@ -39,7 +39,7 @@ static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
     static const cv::Size maxSize;
     std::vector<cv::Rect> result;
     classifier.detectMultiScale(gray, result, scaleFactor, minNeighbors,
-                                CV_HAAR_SCALE_IMAGE, minSize, maxSize);
+                                cv::CASCADE_SCALE_IMAGE, minSize, maxSize);
     return result;
 }
 
@@ -89,11 +89,11 @@ static void displayFace(cv::Mat &frame,
 //
 struct CvVideoCapture: cv::VideoCapture {
     double framesPerSecond() {
-        const double fps = this->get(CV_CAP_PROP_FPS);
+        const double fps = this->get(cv::CAP_PROP_FPS);
         return fps ? fps : 30.0;        // for MacBook iSight camera
     }
     int fourCcCodec() {
-        return this->get(CV_CAP_PROP_FOURCC);
+        return this->get(cv::CAP_PROP_FOURCC);
     }
     const char *fourCcCodecString() {
         static int code = 0;
@@ -109,11 +109,11 @@ struct CvVideoCapture: cv::VideoCapture {
         return result;
     }
     int frameCount() {
-        return this->get(CV_CAP_PROP_FRAME_COUNT);
+        return this->get(cv::CAP_PROP_FRAME_COUNT);
     }
     cv::Size frameSize() {
-        const int w = this->get(CV_CAP_PROP_FRAME_WIDTH);
-        const int h = this->get(CV_CAP_PROP_FRAME_HEIGHT);
+        const int w = this->get(cv::CAP_PROP_FRAME_WIDTH);
+        const int h = this->get(cv::CAP_PROP_FRAME_HEIGHT);
         const cv::Size result(w, h);
         return result;
     }

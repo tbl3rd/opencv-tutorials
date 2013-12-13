@@ -122,7 +122,6 @@ class DemoDisplay {
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->bar <= pD->maxBar);
         const double value = pD->bar;
         pD->apply(value, pD->maxBar);
         cv::imshow("Hulls",  pD->hullsImage);
@@ -140,6 +139,8 @@ public:
     // Show this demo display window.
     //
     void operator()(void) { DemoDisplay::show(0, this); }
+
+    int threshold(void) const { return bar; }
 
     // Demonstrate finding and drawing a convex hull on image s.
     //
@@ -162,6 +163,11 @@ int main(int ac, const char *av[])
         const cv::Mat image = cv::imread(av[1]);
         if (image.data) {
             DemoDisplay demo(image); demo();
+            std::cout << "Initial threshold is: " << demo.threshold()
+                      << std::endl;
+            cv::waitKey(0);
+            std::cout << "Final threshold was: " << demo.threshold()
+                      << std::endl;
             cv::waitKey(0);
             return 0;
         }

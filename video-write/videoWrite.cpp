@@ -50,10 +50,10 @@ static void makeWindow(const char *window, cv::Size size, int reset = 0)
 //
 struct CvVideoCapture: cv::VideoCapture {
     double framesPerSecond() {
-        return this->get(CV_CAP_PROP_FPS);
+        return this->get(cv::CAP_PROP_FPS);
     }
     int fourCcCodec() {
-        return this->get(CV_CAP_PROP_FOURCC);
+        return this->get(cv::CAP_PROP_FOURCC);
     }
     const char *fourCcCodecString() {
         static int code = 0;
@@ -69,11 +69,11 @@ struct CvVideoCapture: cv::VideoCapture {
         return result;
     }
     int frameCount() {
-        return this->get(CV_CAP_PROP_FRAME_COUNT);
+        return this->get(cv::CAP_PROP_FRAME_COUNT);
     }
     cv::Size frameSize() {
-        const int w = this->get(CV_CAP_PROP_FRAME_WIDTH);
-        const int h = this->get(CV_CAP_PROP_FRAME_HEIGHT);
+        const int w = this->get(cv::CAP_PROP_FRAME_WIDTH);
+        const int h = this->get(cv::CAP_PROP_FRAME_HEIGHT);
         const cv::Size result(w, h);
         return result;
     }

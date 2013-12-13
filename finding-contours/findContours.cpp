@@ -110,7 +110,6 @@ class DemoDisplay {
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->bar <= pD->maxBar);
         const double value = pD->bar;
         pD->apply(value);
         cv::imshow("Canny Edges", pD->edgesImage);
@@ -130,6 +129,8 @@ public:
     // Show this demo display window.
     //
     void operator()(void) { DemoDisplay::show(0, this); }
+
+    int threshold(void) const { return bar; }
 
     // Find and display contours in image s.
     //
@@ -157,7 +158,11 @@ int main(int ac, const char *av[])
             cv::imshow("Original", image);
             cv::createTrackbar("for alignment only", "Original", 0, 0, 0, 0);
             DemoDisplay demo(image); demo();
+            std::cout << "Initial threshold is: " << demo.threshold()
+                      << std::endl;
             cv::waitKey(0);
+            std::cout << "Final threshold was: " << demo.threshold()
+                      << std::endl;
             return 0;
         }
     }

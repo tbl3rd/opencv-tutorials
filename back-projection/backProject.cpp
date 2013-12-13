@@ -102,8 +102,7 @@ class BackProjectionDemo {
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         BackProjectionDemo *const pD = (BackProjectionDemo *)p;
-        const int binCount = MAX(pD->binsBar, 1);
-        assert(binCount < pD->maxBins);
+        const int binCount = MIN(MAX(pD->binsBar, 1), pD->maxBins);
         const cv::Mat_<float> hist = calculateHistogram(pD->hueOnly, binCount);
         pD->backProjection = calculateBackProjection(pD->hueOnly, hist);
         drawHistogram(pD->histImage, hist);

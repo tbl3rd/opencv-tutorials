@@ -156,12 +156,16 @@ static cv::Scalar getMssim(const cv::Mat &image1, const cv::Mat &image2)
 // Just cv::VideoCapture extended for convenience.
 //
 struct CvVideoCapture: cv::VideoCapture {
+    double framesPerSecond() {
+        const double fps = this->get(cv::CAP_PROP_FPS);
+        return fps ? fps : 30.0;        // for MacBook iSight camera
+    }
     int count() {
-        return this->get(CV_CAP_PROP_FRAME_COUNT);
+        return this->get(cv::CAP_PROP_FRAME_COUNT);
     }
     cv::Size size() {
-        const int w = this->get(CV_CAP_PROP_FRAME_WIDTH);
-        const int h = this->get(CV_CAP_PROP_FRAME_HEIGHT);
+        const int w = this->get(cv::CAP_PROP_FRAME_WIDTH);
+        const int h = this->get(cv::CAP_PROP_FRAME_HEIGHT);
         const cv::Size result(w, h);
         return result;
     }
@@ -213,22 +217,25 @@ static void compareVideos(CvVideoCapture &reference, CvVideoCapture &test,
 
 int main(int ac, char *av[])
 {
-    if (ac == 5) {
-        std::stringstream s; s << av[3] << std::endl << av[4];
-        int trigger = 0, delay = 0; s >> trigger >> delay;
-        CvVideoCapture reference(av[1]), test(av[2]);
-        const bool ok = trigger && delay
+    if (ac == 4) {
+        std::stringstream s; s << av[3] << std::ends;
+        int trigger = 0; s >> trigger;
+        CvVideoCapture reference(av[1]);
+        CvVideoCapture test(av[2]);
+        const bool ok = trigger
             && reference.isOpened() && test.isOpened()
             && reference.size() == test.size();
         const cv::Size size = reference.size();
         if (ok) {
+            const int msDelay = 1000 / reference.framesPerSecond();
             std::cout << std::endl << av[0] << ": Press any key to quit."
                       << std::endl << std::endl
                       << reference.count() << " frames (W x H): "
                       << size.width << " x " << size.height
                       << " with PSNR trigger " << trigger
-                      << " and delay " << delay << std::endl << std::endl;
-            compareVideos(reference, test, trigger, delay);
+                      << " and delay " << msDelay << " milliseconds."
+                      << std::endl << std::endl;
+            compareVideos(reference, test, trigger, msDelay);
             return 0;
         }
     }

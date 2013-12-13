@@ -64,9 +64,9 @@ static cv::Mat standardHough(const cv::Mat &cannyImg, const cv::Mat &colorImg)
                             cvRound(rho * sinTheta - diagonal * cosTheta));
         static const cv::Scalar color(0, 0, 255);
         static const int thickness = 3;
-        static const int antiAliasedLine = CV_AA;
+        static const int lineKind = 8;
         static const int shift = 0;
-        cv::line(result, pt1, pt2, color, thickness, antiAliasedLine, shift);
+        cv::line(result, pt1, pt2, color, thickness, lineKind, shift);
     }
     return result;
 }
@@ -88,9 +88,9 @@ static cv::Mat probableHough(const cv::Mat &cannyImg, const cv::Mat &colorImg)
         const cv::Point pt2(coordinate[2], coordinate[3]);
         static const cv::Scalar color(0, 0, 255);
         static const int thickness = 3;
-        static const int antiAliasedLine = CV_AA;
+        static const int lineKind = 8;
         static const int shift = 0;
-        cv::line(result, pt1, pt2, color, thickness, antiAliasedLine, shift);
+        cv::line(result, pt1, pt2, color, thickness, lineKind, shift);
     }
     return result;
 }

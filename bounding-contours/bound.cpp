@@ -161,7 +161,6 @@ class DemoDisplay {
     static void show(int positionIgnoredUseThisInstead,  void *p)
     {
         DemoDisplay *const pD = (DemoDisplay *)p;
-        assert(pD->bar <= pD->maxBar);
         const double value = pD->bar;
         pD->apply(value, pD->maxBar);
         cv::imshow("Bounds",  pD->bounds);
@@ -206,8 +205,11 @@ int main(int ac, const char *av[])
         if (image.data) {
             std::cout << "Press a key to quit." << std::endl;
             DemoDisplay demo(image); demo();
+            std::cout << "Initial threshold is: " << demo.threshold()
+                      << std::endl;
             cv::waitKey(0);
-            std::cout << "Threshold was: " << demo.threshold() << std::endl;
+            std::cout << "Final threshold was: " << demo.threshold()
+                      << std::endl;
             return 0;
         }
     }
