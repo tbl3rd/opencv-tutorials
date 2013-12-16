@@ -1,5 +1,9 @@
 INSTALL := ../opencv/install
-LIBS :=  -lopencv_core -lopencv_highgui -lopencv_imgproc
+LIBS := \
+-lopencv_core \
+-lopencv_highgui \
+-lopencv_imgproc \
+#
 
 CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include

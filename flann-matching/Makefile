@@ -6,7 +6,6 @@ LIBS := \
 -lopencv_imgproc \
 -lopencv_features2d \
 -lopencv_nonfree \
--lstdc++ \
 #
 
 CXXFLAGS := -g -O0

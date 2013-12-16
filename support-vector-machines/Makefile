@@ -3,7 +3,6 @@ LIBS := \
 -lopencv_core \
 -lopencv_highgui \
 -lopencv_ml \
--lstdc++ \
 #
 
 CXXFLAGS := -g -O0

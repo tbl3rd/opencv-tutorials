@@ -1,5 +1,9 @@
 INSTALL := ../opencv/install
-LIBS :=  -lopencv_core -lopencv_highgui -lopencv_imgproc -lstdc++
+LIBS := \
+-lopencv_core \
+-lopencv_highgui \
+-lopencv_imgproc \
+#
 
 CXXFLAGS := -Wno-c++11-extensions
 CXXFLAGS := -g -O0 

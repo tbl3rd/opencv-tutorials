@@ -1,9 +1,8 @@
 INSTALL := ../opencv/install
 LIBS := \
--lopencv_core \
--lopencv_highgui \
 -lopencv_ml \
--lstdc++ \
+-lopencv_highgui \
+-lopencv_core \
 #
 
 CXXFLAGS := -g -O0
@@ -30,3 +29,12 @@ debug: main
 	lldb ./$(EXECUTABLE) -- $(ARGS)
 
 .PHONY: main help test clean debug
+
+
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::__1::vector<int, std::__1::allocator<int> > const&)
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)
+# cv::imwrite(cv::String const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)

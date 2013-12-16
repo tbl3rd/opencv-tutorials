@@ -4,7 +4,6 @@ LIBS := \
 -lopencv_highgui \
 -lopencv_imgproc \
 -lopencv_objdetect \
--lstdc++ \
 #
 
 CXXFLAGS := -g -O0
