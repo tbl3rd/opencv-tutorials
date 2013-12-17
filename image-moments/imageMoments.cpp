@@ -156,7 +156,8 @@ class DemoDisplay {
         DemoDisplay *const pD = (DemoDisplay *)p;
         const double value = pD->bar;
         pD->apply(pD->bar, false);
-        cv::imshow("Moments",  pD->output);
+        cv::imshow("Canny Edges", pD->canny);
+        cv::imshow("Moments", pD->output);
     }
 
     // Add a trackbar with label of range 0 to max in bar.
@@ -184,11 +185,17 @@ public:
         source(s), gray(grayBlur(s, kernelSize)),
         bar(100), maxBar(std::numeric_limits<uchar>::max())
     {
+        gray.copyTo(canny);
         makeWindow("Original", source);
+        makeWindow("Gray Blur", gray);
+        makeWindow("Canny Edges", canny);
         makeWindow("Moments", source);
         makeTrackbar("Threshold:", "Original", &bar, maxBar);
+        makeTrackbar("Threshold:", "Gray Blur", &bar, maxBar);
+        makeTrackbar("Threshold:", "Canny Edges", &bar, maxBar);
         makeTrackbar("Threshold:", "Moments", &bar, maxBar);
         cv::imshow("Original", source);
+        cv::imshow("Gray Blur", gray);
     }
 };
 
