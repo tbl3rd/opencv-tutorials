@@ -184,7 +184,7 @@ public:
         source(s), gray(grayBlur(s, kernelSize)),
         bar(100), maxBar(std::numeric_limits<uchar>::max())
     {
-        makeWindow("Original", source, 3);
+        makeWindow("Original", source);
         makeWindow("Moments", source);
         makeTrackbar("Threshold:", "Original", &bar, maxBar);
         makeTrackbar("Threshold:", "Moments", &bar, maxBar);
@@ -214,7 +214,7 @@ int main(int ac, const char *av[])
               << std::endl
               << "Where: <image-file> is the name of an image file."
               << std::endl << std::endl
-              << "Example: " << av[0] << " ../resources/jets.jpg"
+              << "Example: " << av[0] << " ../resources/polygons.png"
               << std::endl << std::endl;
     return 1;
 }

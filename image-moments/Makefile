@@ -9,9 +9,8 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-EXECUTABLE := old-imageMoments
 EXECUTABLE := imageMoments
-IMAGEFILE := ../resources/jets.jpg
+IMAGEFILE := ../resources/polygons.png
 
 main: $(EXECUTABLE)
 
