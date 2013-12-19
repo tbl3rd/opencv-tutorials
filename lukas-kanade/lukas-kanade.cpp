@@ -4,7 +4,7 @@
 #include <iostream>
 
 
-// Show the hot-keys on stderr.
+// Show the hot-keys on os.
 //
 static void showKeys(std::ostream &os, const char *av0)
 {
@@ -40,6 +40,8 @@ static void showUsage(const char *av0)
     showKeys(std::cerr, av0);
 }
 
+// Return termination criteria suitable for this program.
+//
 static cv::TermCriteria makeTerminationCriteria(void)
 {
     static const int criteria
@@ -50,45 +52,52 @@ static cv::TermCriteria makeTerminationCriteria(void)
 }
 
 
-// Just cv::VideoCapture extended for the convenience of LukasKanadeVideoPlayer.
+// Just cv::VideoCapture extended for the convenience of
+// LukasKanadeVideoPlayer.  The const_cast<>()s work around
+// the missing member const on cv::VideoCapture::get().
 //
 struct CvVideoCapture: cv::VideoCapture {
 
-    double getFramesPerSecond() {
-        const double fps = this->get(cv::CAP_PROP_FPS);
+    double getFramesPerSecond() const {
+        CvVideoCapture *const p = const_cast<CvVideoCapture *>(this);
+        const double fps = p->get(cv::CAP_PROP_FPS);
         return fps ? fps : 30.0;        // for MacBook iSight camera
     }
 
-    int getFourCcCodec() {
-        return this->get(cv::CAP_PROP_FOURCC);
+    int getFourCcCodec() const {
+        CvVideoCapture *const p = const_cast<CvVideoCapture *>(this);
+        return p->get(cv::CAP_PROP_FOURCC);
     }
 
-    const char *getFourCcCodecString() {
-        static int code = 0;
-        static char result[5] = "";
-        if (code == 0) {
-            code = this->getFourCcCodec();
-            result[0] = ((code & 0x000000ff) >>  0);
-            result[1] = ((code & 0x0000ff00) >>  8);
-            result[2] = ((code & 0x00ff0000) >> 16);
-            result[3] = ((code & 0xff000000) >> 24);
-            result[4] = ""[0];
-        }
-        return result;
+    std::string getFourCcCodecString() const {
+        char result[] = "????";
+        CvVideoCapture *const p = const_cast<CvVideoCapture *>(this);
+        const int code = p->getFourCcCodec();
+        result[0] = ((code >>  0) & 0xff);
+        result[1] = ((code >>  8) & 0xff);
+        result[2] = ((code >> 16) & 0xff);
+        result[3] = ((code >> 24) & 0xff);
+        result[4] = ""[0];
+        return std::string(result);
     }
 
-    int getFrameCount() {
-        return this->get(cv::CAP_PROP_FRAME_COUNT);
+    int getFrameCount() const {
+        CvVideoCapture *const p = const_cast<CvVideoCapture *>(this);
+        return p->get(cv::CAP_PROP_FRAME_COUNT);
     }
 
-    cv::Size getFrameSize() {
-        const int w = this->get(cv::CAP_PROP_FRAME_WIDTH);
-        const int h = this->get(cv::CAP_PROP_FRAME_HEIGHT);
+    cv::Size getFrameSize() const {
+        CvVideoCapture *const p = const_cast<CvVideoCapture *>(this);
+        const int w = p->get(cv::CAP_PROP_FRAME_WIDTH);
+        const int h = p->get(cv::CAP_PROP_FRAME_HEIGHT);
         const cv::Size result(w, h);
         return result;
     }
 
-    int getPosition(void) { return this->get(cv::CAP_PROP_POS_FRAMES); }
+    int getPosition(void) const {
+        CvVideoCapture *const p = const_cast<CvVideoCapture *>(this);
+        return p->get(cv::CAP_PROP_POS_FRAMES);
+    }
     void setPosition(int p) { this->set(cv::CAP_PROP_POS_FRAMES, p); }
 
     CvVideoCapture(const std::string &fileName): VideoCapture(fileName) {}
@@ -106,13 +115,13 @@ class LukasKanadeVideoPlayer {
     std::string title;                  // the title of the player window
     const int msDelay;                  // the frame delay in milliseconds
     const int frameCount;               // 0 or number of frames in video
-    int position;                       // 0 or current position in video
+    int position;                       // 0 or current frame position in video
     enum State { RUN, STEP } state;     // run at FPS or step frame by frame
     cv::Mat image;                      // the output image in title window
-    cv::Mat frame;                      // buffer of frame from video
+    cv::Mat frame;                      // buffer of current frame from video
     cv::Mat priorGray;                  // prior frame in grayscale
     cv::Mat gray;                       // current frame in grayscale
-    bool night;                         // true if no backing video
+    bool night;                         // true for no backing video in image
 
     // NONE  means no user hot-key request is pending
     // POINT means newPoint contains a new tracking point from mouse
@@ -126,7 +135,7 @@ class LukasKanadeVideoPlayer {
     std::vector<cv::Point2f> points;      // tracking points in gray
 
 
-    // Draw a green circle of radius 3 on image at center.
+    // Draw a filled green circle of radius 3 on image at center.
     //
     static void drawGreenCircle(cv::Mat &image, const cv::Point &center)
     {
@@ -137,7 +146,7 @@ class LukasKanadeVideoPlayer {
         cv::circle(image, center, radius, green, fill, lineKind);
     }
 
-    // Passed to setMouseCallback() for adding new points to track.
+    // Called by setMouseCallback() to add new points to track.
     //
     static void onMouseClick(int event, int x, int y, int n, void *p)
     {
@@ -170,7 +179,8 @@ class LukasKanadeVideoPlayer {
     }
 
     // Calculate the flow of priorPoints in priorGray into points in gray.
-    // Return the tracking statuses of the points in gray.
+    // For points[i], result[i] is true iff it was in priorPoints[i] and
+    // its flow was tracked from priorGray to gray.
     //
     static std::vector<uchar>
     calcFlow(const cv::Mat &priorGray,
@@ -192,8 +202,8 @@ class LukasKanadeVideoPlayer {
         return result;
     }
 
-    // Draw each point on image whose status is true and return all the
-    // points drawn.
+    // Draw on image each point from points whose status is true and return
+    // all the points drawn.
     //
     static std::vector<cv::Point2f>
     drawPoints(cv::Mat &image,
@@ -285,6 +295,19 @@ class LukasKanadeVideoPlayer {
         pV->showFrame();
     }
 
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const LukasKanadeVideoPlayer &p)
+    {
+        const CvVideoCapture &v = p.video;
+        const cv::Size s = v.getFrameSize();
+        const int count = v.getFrameCount();
+        if (count) os << count << " ";
+        os << "(" << s.width << "x" << s.height << ") frames of ";
+        if (count) os << v.getFourCcCodecString() << " ";
+        os <<"video at " << v.getFramesPerSecond() << " FPS";
+        return os;
+    }
+
 public:
 
     ~LukasKanadeVideoPlayer() { cv::destroyWindow(title); }
@@ -316,9 +339,9 @@ public:
     // Run Lukas-Kanade tracking on video from file t.
     //
     LukasKanadeVideoPlayer(const char *t):
-        video(t), msDelay(1000 / video.getFramesPerSecond()),
+        video(t), title(t), msDelay(1000 / video.getFramesPerSecond()),
         frameCount(video.getFrameCount()),
-        title(t), position(0), state(STEP), night(false)
+        position(0), state(STEP), night(false)
     {
         if (*this) {
             cv::namedWindow(title, cv::WINDOW_AUTOSIZE);
@@ -331,12 +354,11 @@ public:
     // Run Lukas-Kanade tracking on video from camera n.
     //
     LukasKanadeVideoPlayer(int n):
-        video(n), msDelay(1000 / video.getFramesPerSecond()),
+        video(n), title("Camera "), msDelay(1000 / video.getFramesPerSecond()),
         frameCount(0), position(0), state(RUN), night(false)
     {
         if (*this) {
-            std::ostringstream oss; oss << "Camera " << n << std::ends;
-            title = oss.str();
+            title += std::to_string(n);
             cv::namedWindow(title, cv::WINDOW_AUTOSIZE);
             cv::setMouseCallback(title, &onMouseClick, this);
         }
@@ -350,10 +372,12 @@ int main(int ac, const char *av[])
         if (0 == strcmp(av[1], "-")) {
             LukasKanadeVideoPlayer camera(-1);
             if (camera) showKeys(std::cout, av[0]);
+            if (camera) std::cout << camera << std::endl;
             if (camera()) return 0;
         } else {
             LukasKanadeVideoPlayer video(av[1]);
             if (video) showKeys(std::cout, av[0]);
+            if (video) std::cout << video << std::endl;
             if (video()) return 0;
         }
     }
