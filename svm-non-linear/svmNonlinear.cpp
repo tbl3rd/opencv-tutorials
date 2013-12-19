@@ -14,7 +14,8 @@ static const float  blueStuff = 23.00;
 //
 static cv::SVMParams makeSvmParams(void)
 {
-    static const int criteria = CV_TERMCRIT_ITER;
+    static const int criteria
+        = cv::TermCriteria::COUNT | cv::TermCriteria::EPS;
     static const int iterations = 1000 * 1000;
     static const double epsilon = std::numeric_limits<double>::epsilon();
     cv::SVMParams result;

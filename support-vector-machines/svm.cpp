@@ -53,7 +53,8 @@ static void drawSvm(cv::Mat &image, const cv::SVM &svm)
 //
 static cv::SVMParams makeSvmParams(void)
 {
-    static const int criteria = CV_TERMCRIT_ITER;
+    static const int criteria
+        = cv::TermCriteria::COUNT | cv::TermCriteria::EPS;
     static const int iterationCount = 100;
     static const double epsilon = std::numeric_limits<double>::epsilon();
     cv::SVMParams result;
