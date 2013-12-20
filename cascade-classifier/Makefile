@@ -13,8 +13,8 @@ CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 EXECUTABLE := cascadeClassify
 ARGS := \
 0 \
-./haarcascade_frontalface_alt.xml \
-./haarcascade_eye_tree_eyeglasses.xml \
+../resources/haarcascade_frontalface_alt.xml \
+../resources/haarcascade_eye_tree_eyeglasses.xml \
 #
 
 main: $(EXECUTABLE)

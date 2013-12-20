@@ -1,14 +1,16 @@
-#include <iostream>
-#include <sstream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 
+#include <iostream>
+
 
 static void showUsage(const char *av0)
 {
-    static const char faces[] = "./haarcascade_frontalface_alt.xml";
-    static const char eyes[] = "./haarcascade_eye_tree_eyeglasses.xml";
+    static const char faces[]
+        = "../resources/haarcascade_frontalface_alt.xml";
+    static const char eyes[]
+        = "../resources/haarcascade_eye_tree_eyeglasses.xml";
     std::cerr << av0 << ": Use Haar cascade classifier to find faces."
               << std::endl
               << "Usage: " << av0 << " <camera> <faces> <eyes>" << std::endl
