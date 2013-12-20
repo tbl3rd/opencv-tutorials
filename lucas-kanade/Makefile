@@ -10,7 +10,7 @@ CXXFLAGS := -g -O0
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
-EXECUTABLE := lukas-kanade
+EXECUTABLE := lucas-kanade
 CAMERA := -
 VIDEO := ../resources/Megamind.avi
 

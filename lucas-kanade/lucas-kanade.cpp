@@ -28,7 +28,7 @@ static void showKeys(std::ostream &os, const char *av0)
 //
 static void showUsage(const char *av0)
 {
-    std::cerr << av0 << ": Demonstrate Lukas-Kanade optical flow tracking."
+    std::cerr << av0 << ": Demonstrate Lucas-Kanade optical flow tracking."
               << std::endl << std::endl
               << "Usage: " << av0 << " <video>" << std::endl << std::endl
               << "Where: <video> is an optional video file." << std::endl
@@ -53,7 +53,7 @@ static cv::TermCriteria makeTerminationCriteria(void)
 
 
 // Just cv::VideoCapture extended for the convenience of
-// LukasKanadeVideoPlayer.  The const_cast<>()s work around
+// LucasKanadeVideoPlayer.  The const_cast<>()s work around
 // the missing member const on cv::VideoCapture::get().
 //
 struct CvVideoCapture: cv::VideoCapture {
@@ -109,7 +109,7 @@ struct CvVideoCapture: cv::VideoCapture {
 // Play video from file with title at FPS or by stepping frames using a
 // trackbar as a scrub control.
 //
-class LukasKanadeVideoPlayer {
+class LucasKanadeVideoPlayer {
 
     CvVideoCapture video;               // the video in this player
     std::string title;                  // the title of the player window
@@ -150,10 +150,10 @@ class LukasKanadeVideoPlayer {
     //
     static void onMouseClick(int event, int x, int y, int n, void *p)
     {
-        LukasKanadeVideoPlayer *const pV = (LukasKanadeVideoPlayer *)p;
+        LucasKanadeVideoPlayer *const pV = (LucasKanadeVideoPlayer *)p;
         if (event == cv::EVENT_LBUTTONDOWN) {
             pV->newPoint = cv::Point2f(x, y);
-            pV->mode = LukasKanadeVideoPlayer::POINT;
+            pV->mode = LucasKanadeVideoPlayer::POINT;
         }
     }
 
@@ -285,18 +285,18 @@ class LukasKanadeVideoPlayer {
         }
     }
 
-    // This is the trackbar callback where p is this LukasKanadeVideoPlayer.
+    // This is the trackbar callback where p is this LucasKanadeVideoPlayer.
     //
     static void onTrackBar(int position, void *p)
     {
-        LukasKanadeVideoPlayer *const pV = (LukasKanadeVideoPlayer *)p;
+        LucasKanadeVideoPlayer *const pV = (LucasKanadeVideoPlayer *)p;
         pV->video.setPosition(position);
-        pV->state = LukasKanadeVideoPlayer::STEP;
+        pV->state = LucasKanadeVideoPlayer::STEP;
         pV->showFrame();
     }
 
     friend std::ostream &operator<<(std::ostream &os,
-                                    const LukasKanadeVideoPlayer &p)
+                                    const LucasKanadeVideoPlayer &p)
     {
         const CvVideoCapture &v = p.video;
         const cv::Size s = v.getFrameSize();
@@ -310,7 +310,7 @@ class LukasKanadeVideoPlayer {
 
 public:
 
-    ~LukasKanadeVideoPlayer() { cv::destroyWindow(title); }
+    ~LucasKanadeVideoPlayer() { cv::destroyWindow(title); }
 
     // True if this can play.
     //
@@ -338,7 +338,7 @@ public:
 
     // Run Lukas-Kanade tracking on video from file t.
     //
-    LukasKanadeVideoPlayer(const char *t):
+    LucasKanadeVideoPlayer(const char *t):
         video(t), title(t), msDelay(1000 / video.getFramesPerSecond()),
         frameCount(video.getFrameCount()),
         position(0), state(STEP), night(false)
@@ -353,7 +353,7 @@ public:
 
     // Run Lukas-Kanade tracking on video from camera n.
     //
-    LukasKanadeVideoPlayer(int n):
+    LucasKanadeVideoPlayer(int n):
         video(n), title("Camera "), msDelay(1000 / video.getFramesPerSecond()),
         frameCount(0), position(0), state(RUN), night(false)
     {
@@ -370,12 +370,12 @@ int main(int ac, const char *av[])
 {
     if (ac == 2) {
         if (0 == strcmp(av[1], "-")) {
-            LukasKanadeVideoPlayer camera(-1);
+            LucasKanadeVideoPlayer camera(-1);
             if (camera) showKeys(std::cout, av[0]);
             if (camera) std::cout << camera << std::endl;
             if (camera()) return 0;
         } else {
-            LukasKanadeVideoPlayer video(av[1]);
+            LucasKanadeVideoPlayer video(av[1]);
             if (video) showKeys(std::cout, av[0]);
             if (video) std::cout << video << std::endl;
             if (video()) return 0;
