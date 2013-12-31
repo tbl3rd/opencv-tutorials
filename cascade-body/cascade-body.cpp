@@ -51,41 +51,55 @@ static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
     return result;
 }
 
-// Draw a blue rectangle around any body in the frame.  Draw a green
-// ellipse around any detected face.  Draw red circles around eyes.
+
+// Draw a green ellipse around any detected face in body.  Draw red circles
+// around eyes in face.
+//
+static void drawFace(cv::Mat &frame, const cv::Rect &body,
+                     const cv::Rect &face,
+                     const std::vector<cv::Rect> &eyes)
+{
+    static const cv::Scalar faceColor(  0, 255,   0);
+    static const cv::Scalar eyesColor(  0,   0, 255);
+    static const int thickness = 4;
+    static const int lineKind = 8;
+    static const int shift = 0;
+    static const double angle = 0.0;
+    static const double beginAngle = 0.0;
+    static const double endAngle = 360.0;
+    const cv::Size axes(face.width * 0.5, face.height * 0.5);
+    const float fX = body.x + face.x;
+    const float fY = body.y + face.y;
+    const cv::Point center(fX + axes.width, fY + axes.height);
+    cv::ellipse(frame, center, axes, angle, beginAngle, endAngle,
+                faceColor, thickness, lineKind, shift);
+    for (size_t j = 0; j < eyes.size(); ++j) {
+        const cv::Rect &eye = eyes[j];
+        const float eX = fX + eye.x;
+        const float eY = fY + eye.y;
+        const cv::Point center(eX + eye.width  * 0.5,
+                               eY + eye.height * 0.5);
+        const int radius = cvRound((eye.width + eye.height) * 0.25);
+        cv::circle(frame, center, radius, eyesColor,
+                   thickness, lineKind, shift);
+    }
+}
+
+
+// Draw a blue rectangle around any body in the frame.
+// Then draw the face within.
 //
 static void drawBody(cv::Mat &frame, const cv::Rect &body,
                      const std::vector<cv::Rect> &faces,
                      const std::vector<cv::Rect> &eyes)
 {
     static const cv::Scalar bodyColor(255,   0,   0);
-    static const cv::Scalar faceColor(  0, 255,   0);
-    static const cv::Scalar eyesColor(  0,   0, 255);
     static const int thickness = 4;
     static const int lineKind = 8;
     static const int shift = 0;
     cv::rectangle(frame, body, bodyColor, thickness, lineKind, shift);
     for (size_t i = 0; i < faces.size(); ++i) {
-        static const double angle = 0.0;
-        static const double beginAngle = 0.0;
-        static const double endAngle = 360.0;
-        const cv::Rect &face = faces[i];
-        const cv::Size axes(face.width * 0.5, face.height * 0.5);
-        const float fX = body.x + face.x;
-        const float fY = body.y + face.y;
-        const cv::Point center(fX + axes.width, fY + axes.height);
-        cv::ellipse(frame, center, axes, angle, beginAngle, endAngle,
-                    faceColor, thickness, lineKind, shift);
-        for (size_t j = 0; j < eyes.size(); ++j) {
-            const cv::Rect &eye = eyes[j];
-            const float eX = fX + eye.x;
-            const float eY = fY + eye.y;
-            const cv::Point center(eX + eye.width  * 0.5,
-                                   eY + eye.height * 0.5);
-            const int radius = cvRound((eye.width + eye.height) * 0.25);
-            cv::circle(frame, center, radius, eyesColor,
-                       thickness, lineKind, shift);
-        }
+        drawFace(frame, body, faces[i], eyes);
     }
 }
 
