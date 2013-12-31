@@ -151,6 +151,36 @@ static void displayBody(cv::Mat &frame,
 }
 
 
+// A Viola-Jones-Lienhart classifier heirarchy where each classifier uses a
+// cascade of boosted Haar feature detectors.
+//
+class VjlHaarCascade {
+    cv::CascadeClassifier itsClassifier;
+    VjlHaarCascade *itsChild;
+
+public:
+
+    std::vector<cv::Rect> detect(const cv::Mat &region)
+    {
+        std::vector<cv::Rect> result;
+        const std::vector<cv::Rect> detects
+            = detectCascade(itsClassifier, region);
+        for (int i = 0; i < detects.size(); ++i) {
+            const cv::Rect &r = detects[i];
+            const cv::Mat roi = region(r);
+            const std::vector<cv::Rect> cds = itsChild->detect(roi);
+            if (!cds.empty()) result.push_back(r);
+        }
+        return result;
+    }
+
+    VjlHaarCascade(const char *xml): itsClassifier(xml), itsChild(0) {}
+    VjlHaarCascade(const char *xml, VjlHaarCascade *child):
+        itsClassifier(xml), itsChild(child)
+    {}
+};
+
+
 // Just cv::VideoCapture extended for convenience.  The const_cast<>()s
 // work around the missing member const on cv::VideoCapture::get().
 //
