@@ -13,15 +13,30 @@ static void showUsage(const char *av0)
         = "../resources/haarcascade_frontalface_alt.xml";
     static const char eyes[]
         = "../resources/haarcascade_eye_tree_eyeglasses.xml";
-    std::cerr << av0 << ": Use Haar cascade classifier to people."
+    std::cerr << av0 << ": Use Haar cascade classifier to find people in video."
+              << std::endl << std::endl
+              << "Recoginize likely upper body "
+              << "(head and shoulders) images in video."
               << std::endl
+              << "Outline upper-body images in blue."
+              << std::endl
+              << "Within upper-body regions, recognize a face."
+              << std::endl
+              << "Outline faces in green."
+              << std::endl
+              << "Within faces, recognize eyes."
+              << std::endl
+              << "Outline eyes in red."
+              << std::endl << std::endl
               << "Usage: " << av0 << " <camera> <faces> <eyes>" << std::endl
               << std::endl
               << "Where: <camera> is an integer camera number." << std::endl
-              << "       <bodies> is Haar data for bodies." << std::endl
-              << "       <faces>  is Haar data for faces." << std::endl
-              << "       <eyes>   is Haar data for eyes." << std::endl
+              << "       <bodies> is Haar training data (.xml) for bodies."
               << std::endl
+              << "       <faces>  is Haar training data (.xml) for faces."
+              << std::endl
+              << "       <eyes>   is Haar training data (.xml) for eyes."
+              << std::endl << std::endl
               << "Example: " << av0 << " 0 " << bodies << " \\ " << std::endl
               << "         " << faces << " \\ " << std::endl
               << "         " << eyes << std::endl << std::endl;
@@ -80,6 +95,9 @@ static void drawRectangle(cv::Mat &frame, const cv::Rect &r)
 
 // Draw red circles around eyes in face.
 //
+// (fX, fY) is effectively the point origin of the face ROI in the frame.
+// Likewise, each (eX, eY) is the origin of an eye rectangle in the frame.
+//
 static void drawEyes(cv::Mat &frame, const cv::Rect &body,
                      const cv::Rect &face,
                      const std::vector<cv::Rect> &eyes)
@@ -100,6 +118,8 @@ static void drawEyes(cv::Mat &frame, const cv::Rect &body,
 
 
 // Draw a green circle around any detected face in body.
+//
+// (fX, fY) is effectively the point origin of the face ROI in the frame.
 //
 static void drawFace(cv::Mat &frame, const cv::Rect &body,
                      const cv::Rect &face,
@@ -130,6 +150,9 @@ static void drawBody(cv::Mat &frame, const cv::Rect &body,
 
 // Detect any body in the frame.  Within the body's region of interest
 // detect any face, and detect eyes within the face's region of interest.
+//
+// Track regions of interest (ROI) here so boundaries can be properly
+// outlined and offset in the frame.
 //
 static void displayBody(cv::Mat &frame,
                         cv::CascadeClassifier &bodyHaar,
