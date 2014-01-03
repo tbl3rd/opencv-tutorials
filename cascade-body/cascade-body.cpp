@@ -11,6 +11,8 @@ static void showUsage(const char *av0)
         = "../resources/haarcascade_upperbody.xml";
     static const char faces[]
         = "../resources/haarcascade_frontalface_alt.xml";
+    static const char eyes[]
+        = "../resources/haarcascade_eye_tree_eyeglasses.xml";
     std::cerr << av0 << ": Use Haar cascade classifier to find people in video."
               << std::endl << std::endl
               << "Recoginize likely upper body "
@@ -22,15 +24,22 @@ static void showUsage(const char *av0)
               << std::endl
               << "Outline faces in green."
               << std::endl
-              << "Usage: " << av0 << " <camera> <faces>" << std::endl
+              << "Within faces, recognize eyes."
+              << std::endl
+              << "Outline eyes in red."
+              << std::endl << std::endl
+              << "Usage: " << av0 << " <camera> <faces> <eyes>" << std::endl
               << std::endl
               << "Where: <camera> is an integer camera number." << std::endl
               << "       <bodies> is Haar training data (.xml) for bodies."
               << std::endl
               << "       <faces>  is Haar training data (.xml) for faces."
+              << std::endl
+              << "       <eyes>   is Haar training data (.xml) for eyes."
               << std::endl << std::endl
               << "Example: " << av0 << " 0 " << bodies << " \\ " << std::endl
-              << "         " << faces << std::endl << std::endl;
+              << "         " << faces << " \\ " << std::endl
+              << "         " << eyes << std::endl << std::endl;
 }
 
 // Return regions of interest detected by classifier in gray.
@@ -59,29 +68,39 @@ static void drawRectangle(cv::Mat &i, const cv::Scalar &c, const cv::Rect &r)
 
 // Outline in blue any body in the frame.
 // Outline in green any face in a body.
+// Outline in red any eyes in a face.
 //
 static void drawBody(cv::Mat &frame, const cv::Rect &body,
-                     const std::vector<cv::Rect> &faces)
+                     const std::vector<cv::Rect> &faces,
+                     const std::vector<cv::Rect> &eyes)
 {
     static const cv::Scalar  blue(255,   0,   0);
     static const cv::Scalar green(  0, 255,   0);
-    const cv::Point origin = body.tl();
+    static const cv::Scalar   red(  0,   0, 255);
+    const cv::Point bodyLocation = body.tl();
     drawRectangle(frame, blue, body);
     const size_t faceCount = faces.size() > 1 ? 1 : faces.size();
-    for (size_t i = 0; i < faceCount; ++i) {
-        drawRectangle(frame, green, faces[i] + origin);
+    for (size_t f = 0; f < faceCount; ++f) {
+        const cv::Rect &face = faces[f];
+        drawRectangle(frame, green, face + bodyLocation);
+        const cv::Point faceLocation = face.tl() + bodyLocation;
+        const size_t eyeCount = eyes.size() > 2 ? 2 : eyes.size();
+        for (size_t e = 0; e < eyeCount; ++e) {
+            drawRectangle(frame, red, eyes[e] + faceLocation);
+        }
     }
 }
 
 // Detect any body in the frame.  Within the body's region of interest
-// detect any face.
+// detect any face, and detect eyes within the face's region of interest.
 //
 // Track regions of interest (ROI) here so boundaries can be properly
 // outlined and offset in the frame.
 //
 static void displayBody(cv::Mat &frame,
                         cv::CascadeClassifier &bodyHaar,
-                        cv::CascadeClassifier &faceHaar)
+                        cv::CascadeClassifier &faceHaar,
+                        cv::CascadeClassifier &eyesHaar)
 {
     static cv::Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
@@ -92,7 +111,12 @@ static void displayBody(cv::Mat &frame,
         const cv::Mat bodyROI = gray(bodies[i]);
         static std::vector<cv::Rect> faces;
         detectCascade(faceHaar, bodyROI, faces);
-        drawBody(frame, bodies[i], faces);
+        static std::vector<cv::Rect> eyes;
+        if (!faces.empty()) {
+            const cv::Mat faceROI = bodyROI(faces[0]);
+            detectCascade(eyesHaar, faceROI, eyes);
+        }
+        drawBody(frame, bodies[i], faces, eyes);
     }
     cv::imshow("Viola-Jones-Lienhart Classifier", frame);
 }
@@ -153,22 +177,26 @@ struct CvVideoCapture: cv::VideoCapture {
 
 int main(int ac, const char *av[])
 {
-    if (ac == 4) {
+    if (ac == 5) {
         int cameraId = 0;
         std::istringstream iss(av[1]); iss >> cameraId;
         cv::CascadeClassifier bodyHaar(av[2]);
         cv::CascadeClassifier faceHaar(av[3]);
+        cv::CascadeClassifier eyesHaar(av[4]);
         std::cout << av[0] << ": camera ID " << cameraId << std::endl
                   << av[0] << ": Body data from " << av[2] << std::endl
-                  << av[0] << ": Face data from " << av[3] << std::endl;
-        if (!bodyHaar.empty() && !faceHaar.empty()) {
+                  << av[0] << ": Face data from " << av[3] << std::endl
+                  << av[0] << ": Eyes data from " << av[4] << std::endl;
+        if (!bodyHaar.empty() && !faceHaar.empty() && ! eyesHaar.empty()) {
             CvVideoCapture camera(cameraId);
             std::cout << std::endl << av[0] << ": Press any key to quit."
                       << std::endl << std::endl;
             const int msPerFrame = 1000.0 / camera.getFramesPerSecond();
             while (true) {
                 static cv::Mat frame; camera >> frame;
-                if (!frame.empty()) displayBody(frame, bodyHaar, faceHaar);
+                if (!frame.empty()) {
+                    displayBody(frame, bodyHaar, faceHaar, eyesHaar);
+                }
                 const int c = cv::waitKey(msPerFrame);
                 if (c != -1) break;
             }
