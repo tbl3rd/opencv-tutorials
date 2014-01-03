@@ -5,6 +5,9 @@
 #include <iostream>
 
 
+// A hierarchical Viola-Jones-Lienhart classifier using upper-body, face,
+// and eye Haar Cascade training data.
+
 static void showUsage(const char *av0)
 {
     static const char bodies[]
@@ -92,7 +95,8 @@ static void drawBody(cv::Mat &frame, const cv::Rect &body,
 }
 
 // Detect any body in the frame.  Within the body's region of interest
-// detect any face, and detect eyes within the face's region of interest.
+// detect up to one face, and detect up to 2 eyes within the face's region
+// of interest.
 //
 // Track regions of interest (ROI) here so boundaries can be properly
 // outlined and offset in the frame.
