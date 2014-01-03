@@ -28,18 +28,6 @@ static void showUsage(const char *av0)
 }
 
 
-// Return a random BGR color.
-//
-static cv::Scalar randomColor(void)
-{
-    static cv::RNG rng;
-    const uchar red   = uchar(rng);
-    const uchar green = uchar(rng);
-    const uchar blue  = uchar(rng);
-    return cv::Scalar(blue, green, red);
-}
-
-
 // Return an equalized grayscale copy of image.
 //
 static cv::Mat grayScale(const cv::Mat &image) {
@@ -162,72 +150,6 @@ static void displayBody(cv::Mat &frame,
     }
     cv::imshow("Viola-Jones-Lienhart Classifier", frame);
 }
-
-
-// A Viola-Jones-Lienhart classifier heirarchy where each classifier uses a
-// cascade of boosted Haar feature detectors provided by CascadeClassifier.
-//
-class VjlHaarCascade {
-    cv::CascadeClassifier itsClassifier;
-    VjlHaarCascade *itsChild;
-    std::vector<cv::Rect> itsRegions;
-    cv::Scalar itsColor;
-    bool itsDraw;
-
-public:
-
-    // Draw recognized regions if true.  Do not draw if false.
-    // Return the prior state.
-    //
-    bool draw(bool onIfTrue)
-    {
-        const bool result = itsDraw;
-        itsChild->draw(onIfTrue);
-        itsDraw = onIfTrue;
-        return result;
-    }
-
-    // Return regions recognized by detect().
-    //
-    std::vector<cv::Rect> regions(void) const { return itsRegions; }
-
-    // Recognize regions in image.
-    //
-    void detect(const cv::Mat &image)
-    {
-        cv::Rect exclude;
-        itsRegions.clear();
-        const std::vector<cv::Rect> detects
-            = detectCascade(itsClassifier, image);
-        for (int i = 0; i < detects.size(); ++i) {
-            const cv::Rect &rect = detects[i];
-            const cv::Rect overlap = exclude & rect;
-            const int ok =
-                rect.width * rect.height > 2 * overlap.width * overlap.height;
-            if (ok) {
-                const cv::Mat roi = image(rect);
-                itsChild->detect(roi);
-                const std::vector<cv::Rect> cds = itsChild->regions();
-                if (!cds.empty()) {
-                    exclude |= rect;
-                    itsRegions.push_back(rect);
-                }
-            }
-        }
-    }
-
-    VjlHaarCascade(const char *xml):
-        itsClassifier(xml), itsChild(0), itsColor(randomColor())
-    {}
-
-    VjlHaarCascade(const char *xml,
-                   VjlHaarCascade *child,
-                   const cv::Scalar &color):
-        itsClassifier(xml),
-        itsChild(child),
-        itsColor(color)
-    {}
-};
 
 
 // Just cv::VideoCapture extended for convenience.  The const_cast<>()s
