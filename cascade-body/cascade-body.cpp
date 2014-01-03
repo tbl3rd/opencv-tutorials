@@ -2,7 +2,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 
-#include <algorithm>
 #include <iostream>
 
 
@@ -45,17 +44,16 @@ static void showUsage(const char *av0)
 
 // Return regions of interest detected by classifier in gray.
 //
-static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
-                                           const cv::Mat &gray)
+static void detectCascade(cv::CascadeClassifier &classifier,
+                          const cv::Mat &gray,
+                          std::vector<cv::Rect> &regions)
 {
     static double scaleFactor = 1.1;
     static const int minNeighbors = 2;
     static const cv::Size minSize(30, 30);
     static const cv::Size maxSize;
-    std::vector<cv::Rect> result;
-    classifier.detectMultiScale(gray, result, scaleFactor, minNeighbors,
+    classifier.detectMultiScale(gray, regions, scaleFactor, minNeighbors,
                                 cv::CASCADE_SCALE_IMAGE, minSize, maxSize);
-    return result;
 }
 
 // Draw rectangle r in color c on image i.
@@ -107,14 +105,16 @@ static void displayBody(cv::Mat &frame,
     static cv::Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
     cv::equalizeHist(gray, gray);
-    const std::vector<cv::Rect> bodies = detectCascade(bodyHaar, gray);
+    static std::vector<cv::Rect> bodies;
+    detectCascade(bodyHaar, gray, bodies);
     for (size_t i = 0; i < bodies.size(); ++i) {
         const cv::Mat bodyROI = gray(bodies[i]);
-        const std::vector<cv::Rect> faces = detectCascade(faceHaar, bodyROI);
-        std::vector<cv::Rect> eyes;
+        static std::vector<cv::Rect> faces;
+        detectCascade(faceHaar, bodyROI, faces);
+        static std::vector<cv::Rect> eyes;
         if (!faces.empty()) {
             const cv::Mat faceROI = bodyROI(faces[0]);
-            eyes = detectCascade(eyesHaar, faceROI);
+            detectCascade(eyesHaar, faceROI, eyes);
         }
         drawBody(frame, bodies[i], faces, eyes);
     }
