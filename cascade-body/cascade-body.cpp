@@ -43,15 +43,6 @@ static void showUsage(const char *av0)
 }
 
 
-// Return an equalized grayscale copy of image.
-//
-static cv::Mat grayScale(const cv::Mat &image) {
-    cv::Mat result;
-    cv::cvtColor(image, result, cv::COLOR_RGB2GRAY);
-    cv::equalizeHist(result, result);
-    return result;
-}
-
 // Return regions of interest detected by classifier in gray.
 //
 static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
@@ -159,7 +150,9 @@ static void displayBody(cv::Mat &frame,
                         cv::CascadeClassifier &faceHaar,
                         cv::CascadeClassifier &eyesHaar)
 {
-    const cv::Mat gray = grayScale(frame);
+    static cv::Mat gray;
+    cv::cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
+    cv::equalizeHist(gray, gray);
     const std::vector<cv::Rect> bodies = detectCascade(bodyHaar, gray);
     for (size_t i = 0; i < bodies.size(); ++i) {
         const cv::Mat bodyROI = gray(bodies[i]);
@@ -246,7 +239,7 @@ int main(int ac, const char *av[])
                       << std::endl << std::endl;
             const int msPerFrame = 1000.0 / camera.getFramesPerSecond();
             while (true) {
-                cv::Mat frame; camera >> frame;
+                static cv::Mat frame; camera >> frame;
                 if (!frame.empty()) {
                     displayBody(frame, bodyHaar, faceHaar, eyesHaar);
                 }

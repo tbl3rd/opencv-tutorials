@@ -7,6 +7,7 @@ LIBS := \
 #
 
 CXXFLAGS := -g -O0
+CXXFLAGS := -O3
 CXXFLAGS += -I$(INSTALL)/include
 CXXFLAGS += -L$(INSTALL)/lib $(LIBS)
 
