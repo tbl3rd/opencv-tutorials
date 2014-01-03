@@ -2,6 +2,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 
+#include <algorithm>
 #include <iostream>
 
 
@@ -42,7 +43,6 @@ static void showUsage(const char *av0)
               << "         " << eyes << std::endl << std::endl;
 }
 
-
 // Return regions of interest detected by classifier in gray.
 //
 static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
@@ -58,84 +58,38 @@ static std::vector<cv::Rect> detectCascade(cv::CascadeClassifier &classifier,
     return result;
 }
 
-
-// Draw on frame a circle with color at center with radius.
+// Draw rectangle r in color c on image i.
 //
-static void drawCircle(cv::Mat &frame, const cv::Scalar &color,
-                       const cv::Point &center, int radius)
+static void drawRectangle(cv::Mat &i, const cv::Scalar &c, const cv::Rect &r)
 {
     static const int thickness = 4;
     static const int lineKind = 8;
     static const int shift = 0;
-    cv::circle(frame, center, radius, color, thickness, lineKind, shift);
+    cv::rectangle(i, r, c, thickness, lineKind, shift);
 }
 
-
-// Draw rectangle r in blue on frame.
-//
-static void drawRectangle(cv::Mat &frame, const cv::Rect &r)
-{
-    static const cv::Scalar blue(255, 0, 0);
-    static const int thickness = 4;
-    static const int lineKind = 8;
-    static const int shift = 0;
-    cv::rectangle(frame, r, blue, thickness, lineKind, shift);
-}
-
-
-
-// Draw red circles around eyes in face.
-//
-// (fX, fY) is effectively the point origin of the face ROI in the frame.
-// Likewise, each (eX, eY) is the origin of an eye rectangle in the frame.
-//
-static void drawEyes(cv::Mat &frame, const cv::Rect &body,
-                     const cv::Rect &face,
-                     const std::vector<cv::Rect> &eyes)
-{
-    static const cv::Scalar red(0, 0, 255);
-    const float fX = body.x + face.x;
-    const float fY = body.y + face.y;
-    for (size_t j = 0; j < eyes.size(); ++j) {
-        const cv::Rect &eye = eyes[j];
-        const float eX = fX + eye.x;
-        const float eY = fY + eye.y;
-        const cv::Point center(eX + eye.width  * 0.5,
-                               eY + eye.height * 0.5);
-        const int radius = cvRound((eye.width + eye.height) * 0.25);
-        drawCircle(frame, red, center, radius);
-    }
-}
-
-
-// Draw a green circle around any detected face in body.
-//
-// (fX, fY) is effectively the point origin of the face ROI in the frame.
-//
-static void drawFace(cv::Mat &frame, const cv::Rect &body,
-                     const cv::Rect &face,
-                     const std::vector<cv::Rect> &eyes)
-{
-    static const cv::Scalar green(0, 255, 0);
-    const float fX = body.x + face.x;
-    const float fY = body.y + face.y;
-    const cv::Point center(fX + face.width * 0.5, fY + face.height * 0.5);
-    const int radius = cvRound((face.width + face.height) * 0.25);
-    drawCircle(frame, green, center, radius);
-    drawEyes(frame, body, face, eyes);
-}
-
-
-// Draw a blue rectangle around any body in the frame.
-// Then draw the face within.
+// Outline in blue any body in the frame.
+// Outline in green any face in a body.
+// Outline in red any eyes in a face.
 //
 static void drawBody(cv::Mat &frame, const cv::Rect &body,
                      const std::vector<cv::Rect> &faces,
                      const std::vector<cv::Rect> &eyes)
 {
-    drawRectangle(frame, body);
-    for (size_t i = 0; i < faces.size(); ++i) {
-        drawFace(frame, body, faces[i], eyes);
+    static const cv::Scalar  blue(255,   0,   0);
+    static const cv::Scalar green(  0, 255,   0);
+    static const cv::Scalar   red(  0,   0, 255);
+    const cv::Point bodyLocation = body.tl();
+    drawRectangle(frame, blue, body);
+    const size_t faceCount = faces.size() > 1 ? 1 : faces.size();
+    for (size_t f = 0; f < faceCount; ++f) {
+        const cv::Rect &face = faces[f];
+        drawRectangle(frame, green, face + bodyLocation);
+        const cv::Point faceLocation = face.tl() + bodyLocation;
+        const size_t eyeCount = eyes.size() > 2 ? 2 : eyes.size();
+        for (size_t e = 0; e < eyeCount; ++e) {
+            drawRectangle(frame, red, eyes[e] + faceLocation);
+        }
     }
 }
 
