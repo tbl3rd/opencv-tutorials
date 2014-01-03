@@ -33,7 +33,8 @@ static void showUsage(const char *av0)
               << std::endl << std::endl
               << "Usage: " << av0 << " <camera> <faces> <eyes>" << std::endl
               << std::endl
-              << "Where: <camera> is an integer camera number." << std::endl
+              << "Where: <camera> is a camera number or video file name."
+              << std::endl
               << "       <bodies> is Haar training data (.xml) for bodies."
               << std::endl
               << "       <faces>  is Haar training data (.xml) for faces."
@@ -179,20 +180,38 @@ struct CvVideoCapture: cv::VideoCapture {
 };
 
 
+// Return a video capture object suitable for the source string.
+// Return the camera with specified ID if source contains an integer.
+// Otherwise attempt to open a video file.
+// Otherwise return the default camera (-1).
+//
+static CvVideoCapture openVideo(const char *source)
+{
+    int cameraId = 0;
+    std::istringstream iss(source);
+    iss >> cameraId;
+    if (iss) return CvVideoCapture(cameraId);
+    std::string filename;
+    std::istringstream sss(source);
+    sss >> filename;
+    if (sss) return CvVideoCapture(filename);
+    return CvVideoCapture(-1);
+}
+
 int main(int ac, const char *av[])
 {
     if (ac == 5) {
-        int cameraId = 0;
-        std::istringstream iss(av[1]); iss >> cameraId;
-        cv::CascadeClassifier bodyHaar(av[2]);
-        cv::CascadeClassifier faceHaar(av[3]);
-        cv::CascadeClassifier eyesHaar(av[4]);
-        std::cout << av[0] << ": camera ID " << cameraId << std::endl
+        std::cout << av[0] << ": Camera is "      << av[1] << std::endl
                   << av[0] << ": Body data from " << av[2] << std::endl
                   << av[0] << ": Face data from " << av[3] << std::endl
                   << av[0] << ": Eyes data from " << av[4] << std::endl;
-        if (!bodyHaar.empty() && !faceHaar.empty() && ! eyesHaar.empty()) {
-            CvVideoCapture camera(cameraId);
+        CvVideoCapture camera = openVideo(av[1]);
+        cv::CascadeClassifier    bodyHaar(av[2]);
+        cv::CascadeClassifier    faceHaar(av[3]);
+        cv::CascadeClassifier    eyesHaar(av[4]);
+        const bool ok = camera.isOpened()
+            && !bodyHaar.empty() && !faceHaar.empty() && !eyesHaar.empty();
+        if (ok) {
             std::cout << std::endl << av[0] << ": Press any key to quit."
                       << std::endl << std::endl;
             const int msPerFrame = 1000.0 / camera.getFramesPerSecond();
