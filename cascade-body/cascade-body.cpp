@@ -27,6 +27,19 @@ static void showUsage(const char *av0)
               << "         " << eyes << std::endl << std::endl;
 }
 
+
+// Return a random BGR color.
+//
+static cv::Scalar randomColor(void)
+{
+    static cv::RNG rng;
+    const uchar red   = uchar(rng);
+    const uchar green = uchar(rng);
+    const uchar blue  = uchar(rng);
+    return cv::Scalar(blue, green, red);
+}
+
+
 // Return an equalized grayscale copy of image.
 //
 static cv::Mat grayScale(const cv::Mat &image) {
@@ -147,36 +160,72 @@ static void displayBody(cv::Mat &frame,
         }
         drawBody(frame, bodies[i], faces, eyes);
     }
-    cv::imshow("Capture - Face detection", frame);
+    cv::imshow("Viola-Jones-Lienhart Classifier", frame);
 }
 
 
 // A Viola-Jones-Lienhart classifier heirarchy where each classifier uses a
-// cascade of boosted Haar feature detectors.
+// cascade of boosted Haar feature detectors provided by CascadeClassifier.
 //
 class VjlHaarCascade {
     cv::CascadeClassifier itsClassifier;
     VjlHaarCascade *itsChild;
+    std::vector<cv::Rect> itsRegions;
+    cv::Scalar itsColor;
+    bool itsDraw;
 
 public:
 
-    std::vector<cv::Rect> detect(const cv::Mat &region)
+    // Draw recognized regions if true.  Do not draw if false.
+    // Return the prior state.
+    //
+    bool draw(bool onIfTrue)
     {
-        std::vector<cv::Rect> result;
-        const std::vector<cv::Rect> detects
-            = detectCascade(itsClassifier, region);
-        for (int i = 0; i < detects.size(); ++i) {
-            const cv::Rect &r = detects[i];
-            const cv::Mat roi = region(r);
-            const std::vector<cv::Rect> cds = itsChild->detect(roi);
-            if (!cds.empty()) result.push_back(r);
-        }
+        const bool result = itsDraw;
+        itsChild->draw(onIfTrue);
+        itsDraw = onIfTrue;
         return result;
     }
 
-    VjlHaarCascade(const char *xml): itsClassifier(xml), itsChild(0) {}
-    VjlHaarCascade(const char *xml, VjlHaarCascade *child):
-        itsClassifier(xml), itsChild(child)
+    // Return regions recognized by detect().
+    //
+    std::vector<cv::Rect> regions(void) const { return itsRegions; }
+
+    // Recognize regions in image.
+    //
+    void detect(const cv::Mat &image)
+    {
+        cv::Rect exclude;
+        itsRegions.clear();
+        const std::vector<cv::Rect> detects
+            = detectCascade(itsClassifier, image);
+        for (int i = 0; i < detects.size(); ++i) {
+            const cv::Rect &rect = detects[i];
+            const cv::Rect overlap = exclude & rect;
+            const int ok =
+                rect.width * rect.height > 2 * overlap.width * overlap.height;
+            if (ok) {
+                const cv::Mat roi = image(rect);
+                itsChild->detect(roi);
+                const std::vector<cv::Rect> cds = itsChild->regions();
+                if (!cds.empty()) {
+                    exclude |= rect;
+                    itsRegions.push_back(rect);
+                }
+            }
+        }
+    }
+
+    VjlHaarCascade(const char *xml):
+        itsClassifier(xml), itsChild(0), itsColor(randomColor())
+    {}
+
+    VjlHaarCascade(const char *xml,
+                   VjlHaarCascade *child,
+                   const cv::Scalar &color):
+        itsClassifier(xml),
+        itsChild(child),
+        itsColor(color)
     {}
 };
 
