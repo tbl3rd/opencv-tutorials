@@ -16,7 +16,6 @@ ARGS := \
 0 \
 ../resources/haarcascade_mcs_upperbody.xml \
 ../resources/haarcascade_frontalface_alt.xml \
-../resources/haarcascade_eye_tree_eyeglasses.xml \
 #
 
 main: $(EXECUTABLE)
